@@ -1,24 +1,26 @@
-import './style.css'
-import typescriptLogo from './typescript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.ts'
+import './styles.css';
+import { interval, map, takeUntil, tap } from 'rxjs';
+import { fromEvent } from 'rxjs';
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`
+const output = document.querySelector<HTMLParagraphElement>('#output');
+const stopButton = document.querySelector<HTMLButtonElement>('#stop');
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+const stopClicks$ = fromEvent(stopButton ?? document, 'click');
+
+interval(1000)
+  .pipe(
+    map((count) => count + 1),
+    tap((value) => {
+      if (output) {
+        output.textContent = `Next value: ${value}`;
+      }
+    }),
+    takeUntil(stopClicks$)
+  )
+  .subscribe({
+    complete: () => {
+      if (output) {
+        output.textContent = 'Stream stopped.';
+      }
+    },
+  });

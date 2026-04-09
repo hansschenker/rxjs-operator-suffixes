@@ -2,12 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>rxjs-labs</title>
+    <title>RxJS Vite Starter</title>
+    <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <div id="app"></div>
+    <main class="app">
+      <header>
+        <h1>RxJS + Vite</h1>
+        <p>Streaming values with a simple observable.</p>
+      </header>
+      <section class="panel">
+        <p id="output" aria-live="polite">Waiting for the stream...</p>
+        <button id="stop" type="button">Stop stream</button>
+      </section>
+    </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

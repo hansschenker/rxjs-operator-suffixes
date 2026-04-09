@@ -9,6 +9,7 @@ import {
   musiciansQueryChanged,
   musiciansLoadedSuccess,
   musiciansLoadedFailure,
+  musicianDeleteClicked,
 } from "./store/musicians.actions";
 import {
   musiciansState$,
@@ -31,6 +32,7 @@ export {
   musiciansQueryChanged,
   musiciansLoadedSuccess,
   musiciansLoadedFailure,
+  musicianDeleteClicked,
 };
 
 // Re-export State & Selectors
@@ -72,6 +74,9 @@ export const dispatch = {
   pageOpened: () => dispatcher.next(musiciansPageOpened()),
   queryChanged: (query: string) => {
     dispatcher.next(musiciansQueryChanged({ query }));
+  },
+  deleteMusician: (id: number) => {
+    dispatcher.next(musicianDeleteClicked({ id }));
   },
 };
 

@@ -10,8 +10,8 @@
  * - trace: logs lifecycle, so you can *see* cancellation and completion
  */
 
-import { Subject, timer } from "../src";
-import { debounceTime, switchMap, map, trace } from "../src/operators";
+import { Subject, timer } from "../../main";
+import { debounceTime, switchMap, map, trace } from "../../main";
 
 // Domain model: what our "backend" returns.
 type SearchResult = { term: string; items: string[] };
@@ -33,7 +33,7 @@ const results$ = input$.pipe(
   trace("input"),
   debounceTime(200),
   trace("debounced"),
-  switchMap((term) => mockFetch$(term)),
+  switchMap((term: string) => mockFetch$(term)),
   trace("results"),
 );
 

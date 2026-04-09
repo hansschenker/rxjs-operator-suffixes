@@ -1,20 +1,26 @@
-import { exhaustMap, map } from "rxjs/operators";
+import { exhaustMap, map, catchError } from "rxjs/operators";
+import { of } from "rxjs";
 import { createEffect } from "../core/effect-creator";
-import { ofType } from "../core/actions";
+import { Action, ofType } from "../core/actions";
 import { mapResponse } from "../core/operators";
 import { createEffectsSystem } from "../core/effects-runner";
 import { musiciansService } from "../services/musicians.service";
+import { Musician } from "../model/musician";
 import {
     musiciansPageOpened,
     musiciansLoadedSuccess,
     musiciansLoadedFailure,
     musiciansQueryChanged,
+    musicianDeleteClicked,
+    musicianDeleteSuccess,
+    musicianDeleteFailure,
 } from "./musicians.actions";
 import {
     handlePageOpened,
     handleMusiciansLoadedSuccess,
     handleMusiciansLoadedFailure,
     handleQueryChanged,
+    handleMusicianDeleteSuccess,
 } from "./musicians.state";
 
 // ============================================================================
@@ -43,7 +49,7 @@ export const loadAllMusiciansEffect = createEffect(
             ofType(musiciansPageOpened),
             exhaustMap(() =>
                 musiciansService.getAll().pipe(
-                    mapResponse({
+                    mapResponse<Musician[], Action>({
                         next: (musicians) => musiciansLoadedSuccess({ musicians }),
                         error: (error: Error) =>
                             musiciansLoadedFailure({ message: error.message }),
@@ -115,6 +121,41 @@ export const updateQueryStateEffect = createEffect(
 );
 
 /**
+ * Effect: Delete Musician (Optimistic or Pessimistic)
+ * We'll use pessimistic here (wait for server)
+ */
+export const deleteMusicianEffect = createEffect(
+    () =>
+        actions$.pipe(
+            ofType(musicianDeleteClicked),
+            exhaustMap((action) =>
+                musiciansService.delete(action.payload.id).pipe(
+                    map(() => musicianDeleteSuccess({ id: action.payload.id })),
+                    catchError((error) =>
+                        of(musicianDeleteFailure({ message: error.message }))
+                    )
+                )
+            )
+        ),
+    { id: "delete-musician" }
+);
+
+/**
+ * Effect: Update State after Delete
+ */
+export const updateMusiciansAfterDeleteEffect = createEffect(
+    () =>
+        actions$.pipe(
+            ofType(musicianDeleteSuccess),
+            map((action) => {
+                handleMusicianDeleteSuccess(action.payload.id);
+                return null;
+            })
+        ),
+    { dispatch: false, id: "update-musicians-after-delete" }
+);
+
+/**
  * Effect: Log All Actions (Analytics/Debugging)
  */
 export const loggingEffect = createEffect(
@@ -146,5 +187,7 @@ runner.registerEffects({
     updateMusiciansState: updateMusiciansStateEffect,
     updateFailureState: updateFailureStateEffect,
     updateQueryState: updateQueryStateEffect,
+    deleteMusician: deleteMusicianEffect,
+    updateMusiciansAfterDelete: updateMusiciansAfterDeleteEffect,
     logging: loggingEffect,
 });

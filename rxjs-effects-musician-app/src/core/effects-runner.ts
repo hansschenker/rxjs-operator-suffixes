@@ -1,5 +1,5 @@
-import { Subject, Observable, merge } from "rxjs";
-import { tap, filter } from "rxjs/operators";
+import { Subject, Observable } from "rxjs";
+import { tap } from "rxjs/operators";
 import { Action } from "./actions";
 import { Effect } from "./effect-creator";
 

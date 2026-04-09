@@ -8,8 +8,8 @@
  * - after complete/error, future subscribers start a fresh upstream execution (reset-on-terminal)
  */
 
-import { Observable } from "../src";
-import { share, trace } from "../src/operators";
+import { Observable } from "../../main";
+import { share, trace } from "../../main";
 
 let upstreamSubscriptions = 0;
 

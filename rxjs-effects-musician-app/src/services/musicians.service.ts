@@ -76,6 +76,10 @@ export class MusiciansService {
             toArray()
         );
     }
+
+    delete(_id: number): Observable<void> {
+        return of(undefined).pipe(delay(1000));
+    }
 }
 
 export const musiciansService = new MusiciansService();

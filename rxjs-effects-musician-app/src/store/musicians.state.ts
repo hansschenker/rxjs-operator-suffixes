@@ -73,6 +73,13 @@ export function handleMusiciansLoadedFailure(message: string): void {
     updateState((state) => ({ ...state, isLoading: false, error: message }));
 }
 
+export function handleMusicianDeleteSuccess(id: number): void {
+    updateState((state) => ({
+        ...state,
+        musicians: state.musicians.filter((m) => m.id !== id),
+    }));
+}
+
 /**
  * Subscribe to state changes (replaces Angular Store selectors)
  */

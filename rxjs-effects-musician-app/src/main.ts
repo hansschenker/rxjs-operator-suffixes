@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-import { BehaviorSubject, combineLatest, debounceTime, distinctUntilChanged, fromEvent, map } from "rxjs";
-import { musiciansApp, Musician, musiciansLoadedFailure } from "./musicians-app";
-=======
 import {
   BehaviorSubject,
   combineLatest,
@@ -10,8 +6,7 @@ import {
   fromEvent,
   map,
 } from "rxjs";
-import { musiciansApp, Musician } from "./musicians-app";
->>>>>>> 2f644932ac9ee934590979b8c44f0e04b826658f
+import { musiciansApp, Musician, musiciansLoadedFailure } from "./musicians-app";
 import "./index.css";
 import "./App.css";
 import "./styles/MusicianCard.css";
@@ -57,17 +52,9 @@ errorButton.style.marginTop = "1rem";
 errorButton.style.backgroundColor = "#d32f2f";
 errorButton.style.color = "white";
 errorButton.onclick = () => {
-  musiciansApp.dispatch.queryChanged("ERROR_TEST"); // Using a magic query to trigger error if backend supported it, but here we can just dispatch failure directly for demo
-  // Or we can simulate it by dispatching a failure action directly via the store? 
-  // The clean way is to let the dispatcher handle it. Since we don't have a "trigger error" action, 
-  // we can manually dispatch a failure to show the specific UI state.
-  // In a real app we would have a specific action. For this demo, let's just use the exposed dispatcher?
-  // But `musiciansLoadedFailure` expects a payload.
-  // Let's hack it slightly by assuming the service fails on specific query? No service doesn't.
-  // Let's just create a manual failure for visual verification.
+  // Manually dispatch failure for testing
   musiciansApp.dispatcher.next(musiciansLoadedFailure({ message: "Simulated Error for Testing" }));
 };
-// Add button to header or somewhere visible
 header.append(errorButton);
 
 
@@ -93,11 +80,11 @@ root.append(app);
 const selectedMusicianId$ = new BehaviorSubject<number | null>(null);
 let lastListState:
   | {
-      ids: number[];
-      selectedId: number | null;
-      isLoading: boolean;
-      error: string | null;
-    }
+    ids: number[];
+    selectedId: number | null;
+    isLoading: boolean;
+    error: string | null;
+  }
   | null = null;
 let lastSelectedMusicianId: number | null = null;
 
@@ -195,39 +182,86 @@ const renderList = (
       id.className = "musician-list-id";
       id.textContent = `ID: ${musician.id}`;
 
+      // DELETE BUTTON (New Feature UI)
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "🗑️";
+      deleteBtn.className = "delete-btn";
+      deleteBtn.style.marginLeft = "auto";
+      deleteBtn.onclick = (e) => {
+        e.stopPropagation(); // prevent selection
+        musiciansApp.dispatch.deleteMusician(musician.id);
+      };
+
+      // Wrap content to allow delete button on right? 
+      // Current button structure is just name and id.
+      // We might need to adjust structure.
+      // For now, I'll just append deleteBtn to the main button? No, that's nesting buttons.
+      // I should insert deleteBtn *after* the main button or restructure.
+      // But preserving existing structure...
+      // Let's add it to the button for now and hope styling handles it or just use a span for the click area?
+      // Since `button` is the container, I shouldn't put another button inside.
+      // I'll make the delete button a sibling of `button` and wrap them.
+      // But loop creates `listItem`.
+      // I will restructure slightly: listItem -> [Action Button(Select), Delete Button]
+
+      // Update: Restoring original structure and adding delete button separately
+      const containerDiv = document.createElement("div");
+      containerDiv.style.display = "flex";
+      containerDiv.style.alignItems = "center";
+      containerDiv.style.width = "100%";
+      containerDiv.style.gap = "8px";
+
+      // Fix class of main button to not take full width if flex
+      button.style.flex = "1";
+
       button.append(name, id);
       button.addEventListener("click", () => {
         selectedMusicianId$.next(musician.id);
       });
 
-      listItem.append(button);
+      containerDiv.append(button, deleteBtn);
+      listItem.innerHTML = ""; // clear
+      listItem.append(containerDiv);
       list.append(listItem);
     });
     listContainer.append(list);
     lastRenderedMusicianIds = newIds;
   }
 
-<<<<<<< HEAD
   // 5. Update Selection (always run)
-  // Remove old selection
-  const previousSelected = listContainer.querySelector(".musicians-list-button.is-selected");
-  if (previousSelected) {
-    previousSelected.classList.remove("is-selected");
-    previousSelected.setAttribute("aria-pressed", "false");
-  }
-=======
-    listItem.append(button);
-    list.append(listItem);
-  });
->>>>>>> 2f644932ac9ee934590979b8c44f0e04b826658f
+  const filteredIds = musicians.map((musician) => musician.id);
+  const shouldRenderList =
+    !lastListState ||
+    lastListState.isLoading !== isLoading ||
+    lastListState.error !== error ||
+    lastListState.selectedId !== selectedMusicianId ||
+    lastListState.ids.length !== filteredIds.length ||
+    lastListState.ids.some((id, index) => id !== filteredIds[index]);
 
-  // Add new selection
-  if (selectedMusicianId) {
-    const newSelected = listContainer.querySelector(`#musician-btn-${selectedMusicianId}`);
-    if (newSelected) {
-      newSelected.classList.add("is-selected");
-      newSelected.setAttribute("aria-pressed", "true");
+  if (shouldRenderList) {
+    // Logic for selection highlighting
+    // Remove old
+    const previousSelected = listContainer.querySelector(".musicians-list-button.is-selected");
+    if (previousSelected) {
+      previousSelected.classList.remove("is-selected");
+      previousSelected.setAttribute("aria-pressed", "false");
     }
+
+    // Add new
+    if (selectedMusicianId) {
+      const newSelected = listContainer.querySelector(`#musician-btn-${selectedMusicianId}`);
+      if (newSelected) {
+        newSelected.classList.add("is-selected");
+        newSelected.setAttribute("aria-pressed", "true");
+      }
+    }
+
+    lastListState = {
+      ids: filteredIds,
+      selectedId: selectedMusicianId,
+      isLoading: isLoading,
+      error: error,
+    };
   }
 };
 
@@ -261,18 +295,12 @@ const renderSelection = (musician: Musician | null) => {
   const image = document.createElement("img");
   image.src = musician.photoUrl;
   image.alt = musician.name;
-<<<<<<< HEAD
-  image.loading = "lazy";
-  image.addEventListener("error", () => {
-    image.src = `https://via.placeholder.com/300x200?text=${encodeURIComponent(musician.name)}`;
-  });
-=======
+
   const handleImageError = () => {
     image.removeEventListener("error", handleImageError);
     image.src = createFallbackImage(musician.name);
   };
   image.addEventListener("error", handleImageError);
->>>>>>> 2f644932ac9ee934590979b8c44f0e04b826658f
 
   imageWrapper.append(image);
 
@@ -292,16 +320,6 @@ const renderSelection = (musician: Musician | null) => {
   selectionContainer.append(card);
 };
 
-<<<<<<< HEAD
-
-
-// Combine streams for efficient updates
-const subscription = combineLatest([
-  musiciansApp.state$,
-  selectedMusicianId$
-]).subscribe(([state, selectedId]) => {
-  // Synchronize Input
-=======
 const resolveSelection = (
   musicians: Musician[],
   current: number | null
@@ -314,82 +332,38 @@ const resolveSelection = (
     return current;
   }
 
-  return musicians[0].id;
+  return musicians[0].id; // Default to first
 };
 
 const stateSubscription = combineLatest([
   musiciansApp.state$,
   selectedMusicianId$.pipe(distinctUntilChanged()),
 ]).subscribe(([state, selectedId]) => {
->>>>>>> 2f644932ac9ee934590979b8c44f0e04b826658f
   if (searchInput.value !== state.query) {
     searchInput.value = state.query;
   }
 
-<<<<<<< HEAD
-=======
+  // Auto-selection using resolveSelection
   const nextSelectedId = resolveSelection(state.musicians, selectedId);
   if (nextSelectedId !== selectedId) {
+    // Update stream but don't force loop if already correct
+    // Actually we need to update our local behavior subject if it drifted
+    // But `resolveSelection` just calculates based on current *list* state.
+    // If the list changed (e.g. filtered), our selection might need to jump.
     selectedMusicianId$.next(nextSelectedId);
+    // Return early to wait for next emission with correct ID? 
+    // Or render current?
+    // If we next() here, `combineLatest` might fire again?
+    // Yes, `selectedMusicianId$` will emit.
     return;
   }
 
->>>>>>> 2f644932ac9ee934590979b8c44f0e04b826658f
   const query = state.query.toLowerCase();
   const filteredMusicians = state.musicians.filter((musician) =>
     musician.name.toLowerCase().includes(query)
   );
 
-<<<<<<< HEAD
-  // Auto-selection Logic
-  // We need to be careful not to create infinite loops.
-  // updateSelection() might emit to selectedMusicianId$.
-  // Ideally this logic should be in the store/effects, but for now we keep it here.
-  const currentSelectedId = selectedId;
-  let effectiveSelectedId = currentSelectedId;
-
-  if (filteredMusicians.length > 0) {
-    if (!currentSelectedId || !filteredMusicians.find(m => m.id === currentSelectedId)) {
-      // If nothing selected or selection lost, select first
-      // We do this by side-effect but without emitting if we can avoid it, 
-      // but here we just render with the first one and emit later?
-      // Better: just emit and let next loop handle it?
-      // But we are in the subscription.
-      // Let's just calculate "what SHOULD be rendered" as the selection.
-      effectiveSelectedId = filteredMusicians[0].id;
-      // Only emit if it actually changed to keep sync
-      if (effectiveSelectedId !== currentSelectedId) {
-        // Defer emission to avoid interference with current render cycle
-        setTimeout(() => selectedMusicianId$.next(effectiveSelectedId), 0);
-      }
-    }
-  } else {
-    effectiveSelectedId = null;
-  }
-
-  renderList(filteredMusicians, effectiveSelectedId, state.isLoading, state.error);
-
-  const selectedMusician = filteredMusicians.find(m => m.id === effectiveSelectedId);
-  renderSelection(selectedMusician ?? null);
-=======
-  const filteredIds = filteredMusicians.map((musician) => musician.id);
-  const shouldRenderList =
-    !lastListState ||
-    lastListState.isLoading !== state.isLoading ||
-    lastListState.error !== state.error ||
-    lastListState.selectedId !== selectedId ||
-    lastListState.ids.length !== filteredIds.length ||
-    lastListState.ids.some((id, index) => id !== filteredIds[index]);
-
-  if (shouldRenderList) {
-    renderList(filteredMusicians, selectedId, state.isLoading, state.error);
-    lastListState = {
-      ids: filteredIds,
-      selectedId,
-      isLoading: state.isLoading,
-      error: state.error,
-    };
-  }
+  renderList(filteredMusicians, selectedId, state.isLoading, state.error);
 
   if (lastSelectedMusicianId !== selectedId) {
     const selected = state.musicians.find(
@@ -398,7 +372,6 @@ const stateSubscription = combineLatest([
     renderSelection(selected ?? null);
     lastSelectedMusicianId = selectedId;
   }
->>>>>>> 2f644932ac9ee934590979b8c44f0e04b826658f
 });
 
 // Search Input Logic
@@ -414,11 +387,7 @@ fromEvent(searchInput, "input")
 
 // Cleanup
 window.addEventListener("beforeunload", () => {
-<<<<<<< HEAD
-  subscription.unsubscribe();
-=======
   stateSubscription.unsubscribe();
->>>>>>> 2f644932ac9ee934590979b8c44f0e04b826658f
   musiciansApp.cleanup();
 });
 
