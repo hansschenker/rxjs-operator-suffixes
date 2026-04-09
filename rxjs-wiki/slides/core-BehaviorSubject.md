@@ -49,6 +49,8 @@ console.log(count$.value); // 5
 - Slice state with `pipe(map(...), distinctUntilChanged())`
 
 ```typescript
+// interface State { items: Item[]; loading: boolean; error: string | null }
+// const initialState: State = { items: [], loading: false, error: null }
 const state$ = new BehaviorSubject<State>(initialState);
 
 function dispatch(updater: (s: State) => State): void {
@@ -59,7 +61,6 @@ const items$ = state$.pipe(
   map(s => s.items),
   distinctUntilChanged()
 );
-// ...
 dispatch(s => ({ ...s, loading: true }));
 ```
 
@@ -67,6 +68,7 @@ dispatch(s => ({ ...s, loading: true }));
 
 ## With scan (Redux-style)
 
+- Alternative to direct BehaviorSubject mutation — no `.next()` calls on state$
 - Purer **MVU pattern** — reducer is a pure function
 - More testable than direct BehaviorSubject mutation
 - BehaviorSubject approach is simpler for smaller apps
