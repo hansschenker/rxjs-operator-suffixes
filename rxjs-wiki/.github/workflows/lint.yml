@@ -1,0 +1,65 @@
+name: Lint Wiki
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check all markdown files have frontmatter
+        run: |
+          missing=0
+          for f in $(find . -name "*.md" \
+            -not -path "./.vitepress/*" \
+            -not -path "./node_modules/*" \
+            -not -path "./sources/*" \
+            -not -name "CLAUDE.md" \
+            -not -name "log.md"); do
+            if ! head -1 "$f" | grep -q "^---"; then
+              echo "Missing frontmatter: $f"
+              missing=$((missing + 1))
+            fi
+          done
+          if [ $missing -gt 0 ]; then
+            echo "$missing file(s) missing frontmatter"
+            exit 1
+          fi
+          echo "All pages have frontmatter"
+
+      - name: Check index.md is in sync with actual files
+        run: |
+          echo "Checking index.md covers all wiki pages..."
+          missing=0
+          for f in $(find core history patterns architectures testing debugging \
+            -name "*.md" 2>/dev/null); do
+            base=$(basename "$f" .md)
+            dir=$(dirname "$f")
+            if ! grep -q "$base" index.md; then
+              echo "Not in index.md: $f"
+              missing=$((missing + 1))
+            fi
+          done
+          if [ $missing -gt 0 ]; then
+            echo "$missing page(s) not referenced in index.md"
+            exit 1
+          fi
+          echo "index.md is in sync"
+
+      - name: Setup Node (for VitePress build check)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: VitePress build check
+        run: npm run docs:build

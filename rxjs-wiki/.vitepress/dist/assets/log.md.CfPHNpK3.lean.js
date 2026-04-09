@@ -1,0 +1,1 @@
+import{_ as i,o,c as a,ag as r}from"./chunks/framework.DXGyWiRo.js";const m=JSON.parse('{"title":"RxJS Wiki — Operation Log","description":"","frontmatter":{},"headers":[],"relativePath":"log.md","filePath":"log.md"}'),t={name:"log.md"};function s(l,e,c,n,d,u){return o(),a("div",null,[...e[0]||(e[0]=[r("",111)])])}const h=i(t,[["render",s]]);export{m as __pageData,h as default};

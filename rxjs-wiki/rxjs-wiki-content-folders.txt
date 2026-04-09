@@ -1,0 +1,157 @@
+Github Workflow
+
+->
+
+Thank you! The two workflows together give you a solid CI/CD loop:
+
+- lint.yml catches problems early - a broken frontmatter or a page missing from the index fails before it ever merges
+- deploy. yml means every wiki update (ingest, expand, lint fix) automatically publishes to GitHub Pages with zero manual steps
+
+So the full workflow end-to-end becomes:
+
+YouTube talk > copy transcript > /wiki-ingest
+
+pages updated in wiki
+
+git commit + push
+
+lint.yml runs (validates health)
+
+deploy.yml runs (publishes site)
+
+live at hansschenker.github.io/rxjs-wiki
+
+The wiki compounds automatically - every source you ingest makes the site richer without any extra publishing steps.
+
+
+-------
+File
+
+package. json
+
+gitignore
+
+.vitepress/config.ts
+
+.github/workflows/deploy.yml
+
+github/workflows/lint.yml
+
+
+-----
+Purpose
+
+VitePress dependency + docs:dev / docs:build / docs:preview scripts
+
+Excludes node_modules/, .vitepress/dist/, .vitepress/cache/
+
+Full sidebar, nav, local search, edit-on-GitHub links
+
+Builds and deploys to GitHub Pages on every push to main
+
+Checks frontmatter, index.md sync, and VitePress build on every push/PR
+
+To run locally:
+npm run docs: dev
+npm run docs: build
+npm run docs: preview
+
+To publish: push to GitHub, then in repo Settings > Pages > set source to GitHub Actions. The deploy workflow fires automatically
+the next push and the wiki goes live at https://hansschenker.github.io/rxjs-wiki/.
+
+# live dev server
+# production build
+# preview the build
+
+-----
+use case for .gitkeep
+
+what is the use case of add .github in the folders
+
+Good question. For this wiki specifically, .github has a few practical use cases:
+
+Most valuable for a wiki repo
+
+1. Issue templates - structured ways to track wiki work without losing it in chat:
+.github/
+- IS
+SUE_TEMPLATE/
+ingest-request.md
+expand-request. md
+correction.md
+
+2. GitHub Actions - automated lint on push:
+# .github/workflows/lint.yml
+# Run /wiki-lint equivalent: check for broken links, missing frontmatter
+Every time you push a new source or page, GitHub verifies the wiki stays healthy.
+
+3. GitHub Pages - publish the wiki as a site:
+# .github/workflows/deploy.yml
+# Build with VitePress and deploy to GitHub Pages
+# The wiki becomes browsable at yourusername.github.io/rxjs-wiki
+Since the wiki is already structured markdown with frontmatter, VitePress would render it beautifully with almost no extra config -
+and you already use VitePress in your other projects.
+
+« "Please ingest this talk/article"
+"This topic needs a page"
+« "This page has an error"
+
+My suggestion
+
+The highest-value addition for your workflow would be GitHub Pages + VitePress - you'd get a searchable, navigable website from the
+-----
+rxjs-wiki/
+sources/
+talks/
+articles/
+courses/
+code/
+core/
+patterns/
+
+៛ raw, immutable input material
++ conference talk transcripts
+web clips (Obsidian Web Clipper > markdown)
+course notes / chapter summaries
+« reference implementations, examples
+
+Why this structure helps:
+
+- You drop a transcript in sources/talks/ then run /wiki-ingest sources/talks/ben-lesh-rxjs7. txt - the command knows exactly where to
+look
+- Raw sources stay alongside the wiki in the same git repo - version history shows when each source was added
+- You can always re-ingest a source if you expand the wiki later and want to extract more from it
+- Obsidian Web Clipper saves articles as markdown - they land directly in sources/articles/ ready to ingest
+
+Want me to create the sources/ directory structure and update CLAUDE.md and the /wiki-ingest command to reference it?
+
+
+.. " below the video > "Show transcript"
+
+can claude also ingest videos
+
+Not directly - Claude can't play or transcribe audio/video. But there's a practical workaround depending on the source:
+
+YouTube talks (most RxJS content)
+
+YouTube generates transcripts automatically. Get one in seconds:
+
+1. Open the video on YouTube
+2. Click ".
+3. Copy-paste the transcript into the chat > /wiki-ingest
+
+The transcript quality is usually good enough for conference talks (Ben Lesh, Nicholas Jamieson, etc.).
+
+CLI approach (any video file or YouTube URL)
+
+If you have yt-dlp and OpenAI whisper installed:
+
+# Download audio + transcribe
+yt-dlp -x -- audio-format mp3 "https://youtube. com/watch?v =... " -o talk.mp3
+whisper talk.mp3 -- output_format txt
+# Then paste talk.txt into the chat /wiki-ingest
+
+Or just the subtitle track (faster, no AI):
+
+yt-dlp -- write-auto-sub -- skip-download -- sub-format vtt "https:// ... " -o transcript
+# Convert vtt to plain text, then ingest
