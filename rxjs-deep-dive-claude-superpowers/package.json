@@ -2,6 +2,7 @@
   "name": "rxjs-deep-dive-course",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "check": "tsx scripts/check-readiness.ts",
     "generate": "tsx scripts/generate-slides.ts",
