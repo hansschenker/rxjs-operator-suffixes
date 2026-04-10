@@ -1,0 +1,393 @@
+{
+  "sections": [
+    {
+      "id": 0,
+      "title": "RxJS Conceptual and Historical Roots",
+      "tagline": "Where did this come from and why does it look the way it does?",
+      "lessons": [
+        {
+          "id": "0.1",
+          "title": "Haskell list comprehensions and lazy sequences",
+          "wikiSources": ["core/frp-concepts.md"],
+          "companionPath": null
+        },
+        {
+          "id": "0.2",
+          "title": "LINQ and the IEnumerable abstraction",
+          "wikiSources": ["core/linq-monad.md"],
+          "companionPath": null
+        },
+        {
+          "id": "0.3",
+          "title": "Erik Meijer and the IEnumerable/IObservable dual",
+          "wikiSources": ["history/erik-meijer.md"],
+          "companionPath": null
+        },
+        {
+          "id": "0.4",
+          "title": "Rx.NET to RxJS: the port and what changed",
+          "wikiSources": ["history/roots.md", "history/timeline.md"],
+          "companionPath": null
+        },
+        {
+          "id": "0.5",
+          "title": "The monad connection: flatMap as the universal combinator",
+          "wikiSources": ["core/linq-monad.md"],
+          "companionPath": null
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "title": "Foundations Revisited",
+      "tagline": "The mental model intermediate devs are missing",
+      "lessons": [
+        {
+          "id": "1.1",
+          "title": "Observable internals: what actually happens on subscribe",
+          "wikiSources": ["core/observable-internals.md"],
+          "companionPath": "apps/starter-minimal"
+        },
+        {
+          "id": "1.2",
+          "title": "The eight execution phases",
+          "wikiSources": ["core/execution-phases.md"],
+          "companionPath": "apps/starter-minimal"
+        },
+        {
+          "id": "1.3",
+          "title": "Hot vs Cold: precise definition, not intuition",
+          "wikiSources": ["core/hot-cold.md"],
+          "companionPath": "apps/starter-standard"
+        },
+        {
+          "id": "1.4",
+          "title": "The operator policy framework (8 axes)",
+          "wikiSources": ["core/operator-policies.md"],
+          "companionPath": null
+        },
+        {
+          "id": "1.5",
+          "title": "Marble diagrams as a first-class tool",
+          "wikiSources": ["core/operators.md"],
+          "companionPath": "packages/testing"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Async Coordination",
+      "tagline": "switchMap vs mergeMap vs concatMap vs exhaustMap — once and for all",
+      "lessons": [
+        {
+          "id": "2.1",
+          "title": "Higher-order operators: what flattening means",
+          "wikiSources": ["core/higher-order-operators.md"],
+          "companionPath": "packages/http"
+        },
+        {
+          "id": "2.2",
+          "title": "switchMap: live queries, search, cancellation",
+          "wikiSources": ["core/higher-order-operators.md"],
+          "companionPath": "apps/shop"
+        },
+        {
+          "id": "2.3",
+          "title": "concatMap: ordered queues, animations",
+          "wikiSources": ["core/higher-order-operators.md"],
+          "companionPath": "apps/shop"
+        },
+        {
+          "id": "2.4",
+          "title": "exhaustMap: form submit, login, debounced actions",
+          "wikiSources": ["core/higher-order-operators.md"],
+          "companionPath": "apps/shop"
+        },
+        {
+          "id": "2.5",
+          "title": "mergeMap: when order truly does not matter",
+          "wikiSources": ["core/higher-order-operators.md"],
+          "companionPath": "apps/playground"
+        },
+        {
+          "id": "2.6",
+          "title": "Decision guide: choosing the right flattening operator",
+          "wikiSources": ["core/higher-order-operators.md"],
+          "companionPath": null
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "State Without a Framework",
+      "tagline": "BehaviorSubject + scan is your state machine",
+      "lessons": [
+        {
+          "id": "3.1",
+          "title": "BehaviorSubject as a state container",
+          "wikiSources": ["core/BehaviorSubject.md"],
+          "companionPath": "packages/store"
+        },
+        {
+          "id": "3.2",
+          "title": "scan + reducer = MVU in 10 lines",
+          "wikiSources": ["core/subjects-guide.md"],
+          "companionPath": "packages/store"
+        },
+        {
+          "id": "3.3",
+          "title": "ReplaySubject and AsyncSubject: when BehaviorSubject is not right",
+          "wikiSources": ["core/ReplaySubject.md", "core/AsyncSubject.md"],
+          "companionPath": null
+        },
+        {
+          "id": "3.4",
+          "title": "shareReplay: caching, multicasting, the refCount trap",
+          "wikiSources": ["core/share-replay.md"],
+          "companionPath": "packages/store"
+        },
+        {
+          "id": "3.5",
+          "title": "Persisted state with localStorage",
+          "wikiSources": ["patterns/state-management.md"],
+          "companionPath": "packages/persist"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Stream Composition",
+      "tagline": "Combining multiple sources without losing your mind",
+      "lessons": [
+        {
+          "id": "4.1",
+          "title": "combineLatest: formal rules, the EMPTY trap",
+          "wikiSources": ["core/combine-latest.md"],
+          "companionPath": "packages/dom"
+        },
+        {
+          "id": "4.2",
+          "title": "withLatestFrom: sampling vs combining",
+          "wikiSources": ["core/combination-operators.md"],
+          "companionPath": "apps/shop"
+        },
+        {
+          "id": "4.3",
+          "title": "merge, concat, race, zip: when to use each",
+          "wikiSources": ["core/combination-operators.md"],
+          "companionPath": "apps/playground"
+        },
+        {
+          "id": "4.4",
+          "title": "RxJS as a dataflow graph",
+          "wikiSources": ["core/dataflow-model.md"],
+          "companionPath": "apps/shop"
+        },
+        {
+          "id": "4.5",
+          "title": "Stream machines: the 6 irreducible building blocks",
+          "wikiSources": ["core/stream-machines.md"],
+          "companionPath": null
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Error Resilience",
+      "tagline": "Streams that do not die in production",
+      "lessons": [
+        {
+          "id": "5.1",
+          "title": "catchError: recover vs rethrow",
+          "wikiSources": ["patterns/error-handling.md"],
+          "companionPath": "packages/errors"
+        },
+        {
+          "id": "5.2",
+          "title": "retry, retryWhen, and exponential backoff",
+          "wikiSources": ["patterns/error-handling.md"],
+          "companionPath": "packages/http"
+        },
+        {
+          "id": "5.3",
+          "title": "timeout and race-based fallbacks",
+          "wikiSources": ["patterns/error-handling.md"],
+          "companionPath": "packages/http"
+        },
+        {
+          "id": "5.4",
+          "title": "Global error capture and centralized reporting",
+          "wikiSources": ["patterns/error-handling.md"],
+          "companionPath": "packages/errors"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Custom Operators and Pipeline Composition",
+      "tagline": "Writing operators that read like sentences",
+      "lessons": [
+        {
+          "id": "6.1",
+          "title": "pipe() as Kleisli composition",
+          "wikiSources": ["core/custom-operators.md"],
+          "companionPath": "packages/core"
+        },
+        {
+          "id": "6.2",
+          "title": "Parametric operator factories",
+          "wikiSources": ["core/custom-operators.md"],
+          "companionPath": "packages/core"
+        },
+        {
+          "id": "6.3",
+          "title": "Domain operators: giving operators business names",
+          "wikiSources": ["patterns/domain-operators.md"],
+          "companionPath": "packages/dom"
+        },
+        {
+          "id": "6.4",
+          "title": "Low-level: building operators with the Observable constructor",
+          "wikiSources": ["core/custom-operators.md"],
+          "companionPath": "packages/core"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Multicasting and Hot Streams",
+      "tagline": "Subjects are not bad — you are just using them wrong",
+      "lessons": [
+        {
+          "id": "7.1",
+          "title": "Subject variants compared: the choosing guide",
+          "wikiSources": ["core/subjects-guide.md"],
+          "companionPath": null
+        },
+        {
+          "id": "7.2",
+          "title": "Cold-to-hot conversion: publish, share, multicast",
+          "wikiSources": ["core/hot-cold.md"],
+          "companionPath": "packages/router"
+        },
+        {
+          "id": "7.3",
+          "title": "The router as a shared hot stream",
+          "wikiSources": ["core/hot-cold.md"],
+          "companionPath": "packages/router"
+        },
+        {
+          "id": "7.4",
+          "title": "Subject as action bus: the effects pattern",
+          "wikiSources": ["patterns/effects.md"],
+          "companionPath": "apps/shop"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Architecture Patterns",
+      "tagline": "How RxJS organises a whole application",
+      "lessons": [
+        {
+          "id": "8.1",
+          "title": "MVU (Model-View-Update) in pure RxJS",
+          "wikiSources": ["architectures/mvu.md", "patterns/mvu.md"],
+          "companionPath": "apps/shop"
+        },
+        {
+          "id": "8.2",
+          "title": "Event-driven architecture with action streams",
+          "wikiSources": ["architectures/event-driven.md"],
+          "companionPath": "apps/shop"
+        },
+        {
+          "id": "8.3",
+          "title": "Redux-Observable style effects",
+          "wikiSources": ["architectures/redux-observable.md", "patterns/effects.md"],
+          "companionPath": "apps/shop"
+        },
+        {
+          "id": "8.4",
+          "title": "XState vs RxJS: when to reach for a state machine",
+          "wikiSources": ["architectures/xstate-vs-rxjs.md"],
+          "companionPath": null
+        },
+        {
+          "id": "8.5",
+          "title": "The full shop walkthrough: all patterns assembled",
+          "wikiSources": [],
+          "companionPath": "apps/shop"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Testing Reactive Code",
+      "tagline": "Tests that actually catch bugs",
+      "lessons": [
+        {
+          "id": "9.1",
+          "title": "TestScheduler and virtual time",
+          "wikiSources": ["core/Scheduler.md"],
+          "companionPath": "packages/testing"
+        },
+        {
+          "id": "9.2",
+          "title": "Marble syntax deep dive",
+          "wikiSources": ["core/Scheduler.md"],
+          "companionPath": "packages/testing"
+        },
+        {
+          "id": "9.3",
+          "title": "Testing operators in isolation",
+          "wikiSources": [],
+          "companionPath": "packages/core"
+        },
+        {
+          "id": "9.4",
+          "title": "Testing effects and async state",
+          "wikiSources": [],
+          "companionPath": "packages/store"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Production Patterns",
+      "tagline": "What nobody tells you until you are in production",
+      "lessons": [
+        {
+          "id": "10.1",
+          "title": "Memory leaks: takeUntil, take(1), async pipe equivalents",
+          "wikiSources": ["core/Subscription.md"],
+          "companionPath": "apps/demo"
+        },
+        {
+          "id": "10.2",
+          "title": "Debugging streams: tap, debug operators, DevTools",
+          "wikiSources": [],
+          "companionPath": "apps/playground"
+        },
+        {
+          "id": "10.3",
+          "title": "Animations with animationFrameScheduler",
+          "wikiSources": ["patterns/animations.md"],
+          "companionPath": "apps/snake"
+        },
+        {
+          "id": "10.4",
+          "title": "SSR: Observable pipelines on the server",
+          "wikiSources": [],
+          "companionPath": "apps/demo"
+        },
+        {
+          "id": "10.5",
+          "title": "RxJS with React and Angular: bridging the gap",
+          "wikiSources": [],
+          "companionPath": "apps/demo"
+        }
+      ]
+    }
+  ]
+}
