@@ -1,0 +1,25 @@
+{
+  "name": "rxjs-deep-dive-course",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "check": "tsx scripts/check-readiness.ts",
+    "generate": "tsx scripts/generate-slides.ts",
+    "export-pdf": "tsx scripts/export-pdf.ts",
+    "notes": "tsx scripts/generate-recording-notes.ts",
+    "tags": "tsx scripts/tag-sections.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.20",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.9"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.36.3",
+    "@marp-team/marp-cli": "^4.3.1"
+  }
+}
