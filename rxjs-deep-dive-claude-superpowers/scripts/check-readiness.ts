@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { loadCurriculum, lessonSlug, allLessons, LessonWithSection } from './lib/curriculum.js';
 import { CURRICULUM_PATH, SLIDES_DRAFT_DIR, SLIDES_POLISHED_DIR } from './lib/config.js';
 
@@ -64,4 +65,6 @@ function main(): void {
 	console.log(`\nSummary: ${polished} polished  ${draft} draft  ${missing} missing  /  ${report.length} total`);
 }
 
-main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+	main();
+}
