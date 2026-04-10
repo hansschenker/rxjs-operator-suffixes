@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import Anthropic from '@anthropic-ai/sdk';
 import { loadCurriculum, lessonSlug, allLessons, LessonWithSection } from './lib/curriculum.js';
 import { CURRICULUM_PATH, WIKI_DIR, SLIDES_DRAFT_DIR } from './lib/config.js';
 
@@ -60,7 +60,7 @@ function readWikiSources(wikiSources: string[]): string {
 		.join('\n\n');
 }
 
-async function generateSlide(client: Anthropic, lesson: LessonWithSection): Promise<string> {
+function generateSlide(lesson: LessonWithSection): string {
 	const wikiContent = readWikiSources(lesson.wikiSources);
 	const userPrompt = `Lesson ID: ${lesson.id}
 Lesson title: ${lesson.title}
@@ -69,25 +69,24 @@ Section: ${lesson.sectionTitle}
 Wiki source content:
 ${wikiContent}`;
 
-	const message = await client.messages.create({
-		model: 'claude-opus-4-6',
-		max_tokens: 2048,
-		system: SLIDE_SYSTEM_PROMPT,
-		messages: [{ role: 'user', content: userPrompt }],
-	});
+	const result = spawnSync(
+		'claude',
+		['-p', '--system-prompt', SLIDE_SYSTEM_PROMPT, '--output-format', 'text'],
+		{
+			input: userPrompt,
+			encoding: 'utf-8',
+			maxBuffer: 10 * 1024 * 1024,
+		}
+	);
 
-	const block = message.content[0];
-	if (block.type !== 'text') throw new Error(`Unexpected content block type: ${block.type}`);
-	return block.text;
+	if (result.error) throw result.error;
+	if (result.status !== 0) throw new Error(`claude exited with status ${result.status}:\n${result.stderr}`);
+	return result.stdout.trim();
 }
 
-async function main(): Promise<void> {
+function main(): void {
 	const lessonFilter = process.argv[2]; // optional: "2.2" to generate only one lesson
 
-	const apiKey = process.env['ANTHROPIC_API_KEY'];
-	if (!apiKey) throw new Error('ANTHROPIC_API_KEY environment variable is required');
-
-	const client = new Anthropic({ apiKey });
 	const curriculum = loadCurriculum(CURRICULUM_PATH);
 	const lessons = allLessons(curriculum);
 
@@ -112,15 +111,12 @@ async function main(): Promise<void> {
 		}
 
 		console.log(`gen   ${lesson.id}  ${lesson.title}`);
-		const content = await generateSlide(client, lesson);
+		const content = generateSlide(lesson);
 		fs.writeFileSync(outPath, content, 'utf-8');
 		console.log(`done  → ${slug}.md`);
 	}
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-	main().catch(err => {
-		console.error(err);
-		process.exit(1);
-	});
+	main();
 }
