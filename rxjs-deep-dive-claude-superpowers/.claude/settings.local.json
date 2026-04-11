@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Read(//c/Users/HP/Web/Frontend/rxjs/rxjs-spa//**)",
+      "Read(//c/Users/HP/Web/Frontend/rxjs/rxjs-spa-v01//**)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node -e \"const data = require\\('./curriculum.json'\\); console.log\\('Valid JSON'\\); console.log\\('Sections:', data.sections.length\\); let total = 0; data.sections.forEach\\(s => { const count = s.lessons.length; total += count; console.log\\('  Section', s.id, '-', s.title, ':', count, 'lessons'\\); }\\); console.log\\('Total lessons:', total\\);\")",
+      "Bash(node:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npm run:*)",
+      "Bash(npm test:*)",
+      "Bash(ls -d \"C:/Users/HP/Web/Frontend/rxjs/rxjs-deep-dive-claude-superpowers/docs/recording-notes/section-\"*)",
+      "Bash(claude -p --output-format text)",
+      "Bash(npx tsx:*)",
+      "Bash(ls /c/Users/HP/Web/Frontend/rxjs/rxjs-wiki/slides/*.md)",
+      "Bash(cp /c/Users/HP/Web/Frontend/rxjs/rxjs-wiki/slides/00-01-haskell-list-comprehensions-and-lazy-sequences.md /c/Users/HP/Web/Frontend/rxjs/rxjs-deep-dive-claude-superpowers/slides-polished/)",
+      "Bash(cp /c/Users/HP/Web/Frontend/rxjs/rxjs-wiki/slides/00-02-linq-and-the-ienumerable-abstraction.md /c/Users/HP/Web/Frontend/rxjs/rxjs-deep-dive-claude-superpowers/slides-polished/)",
+      "Bash(cp /c/Users/HP/Web/Frontend/rxjs/rxjs-wiki/slides/00-03-erik-meijer-and-the-ienumerable-iobservable-dual.md /c/Users/HP/Web/Frontend/rxjs/rxjs-deep-dive-claude-superpowers/slides-polished/)",
+      "Bash(cp /c/Users/HP/Web/Frontend/rxjs/rxjs-wiki/slides/00-04-rx-net-to-rxjs-the-port-and-what-changed.md /c/Users/HP/Web/Frontend/rxjs/rxjs-deep-dive-claude-superpowers/slides-polished/)",
+      "Bash(cp /c/Users/HP/Web/Frontend/rxjs/rxjs-wiki/slides/00-05-the-monad-connection-flatmap-as-the-universal-combinator.md /c/Users/HP/Web/Frontend/rxjs/rxjs-deep-dive-claude-superpowers/slides-polished/)",
+      "Bash(cp /c/Users/HP/Web/Frontend/rxjs/rxjs-wiki/slides/[0-9][0-9]-[0-9][0-9]-*.md /c/Users/HP/Web/Frontend/rxjs/rxjs-deep-dive-claude-superpowers/slides-polished/)",
+      "Bash(ls /c/Users/HP/Web/Frontend/rxjs/rxjs-deep-dive-claude-superpowers/slides-polished/*.md)"
+    ]
+  }
+}
