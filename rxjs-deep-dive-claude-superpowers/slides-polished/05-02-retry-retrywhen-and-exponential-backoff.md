@@ -59,26 +59,26 @@ action$.pipe(
 ## The Right Way
 
 ```typescript
-import { retryWhen, scan, delayWhen, timer, catchError } from 'rxjs/operators';
+import { retry, timer, catchError } from 'rxjs';
 
+// ✅ RxJS 7+: retry() accepts a config object — retryWhen is deprecated
 action$.pipe(
   switchMap(() =>
     fetchData$.pipe(
-      retryWhen(errors$ =>
-        errors$.pipe(
-          scan((attempt, err) => {
-            if (attempt >= 3) throw err; // give up — let catchError below handle it
-            return attempt + 1;
-          }, 0),
-          // exponential backoff: 1 s → 2 s → 4 s
-          delayWhen(attempt => timer(Math.pow(2, attempt) * 1000))
-        )
-      ),
+      retry({
+        count: 3,
+        // delay fn: (error, retryCount) — retryCount starts at 1
+        // return an Observable; when it emits, the retry fires
+        delay: (_err, retryCount) =>
+          timer(Math.pow(2, retryCount) * 1000), // 2s → 4s → 8s
+      }),
       // only the inner fetch dies; the outer action$ stream stays alive
       catchError(err => of(errorAction(err)))
     )
   )
 );
+// retryWhen() still exists in RxJS 7 but is deprecated —
+// prefer retry({ count, delay }) for all new code
 ```
 
 ---

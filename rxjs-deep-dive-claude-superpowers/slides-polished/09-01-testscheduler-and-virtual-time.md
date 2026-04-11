@@ -1,5 +1,3 @@
-The rxjs-explain skill is for single operator deep-dives saved to files — it doesn't apply here. Generating the Marp deck directly from the provided wiki source.
-
 ---
 marp: true
 theme: uncover

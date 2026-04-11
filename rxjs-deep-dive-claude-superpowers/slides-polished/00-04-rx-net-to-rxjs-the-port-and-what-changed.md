@@ -1,5 +1,3 @@
-The `rxjs-explain` skill is for individual operator deep-dives — it doesn't apply to this historical/conceptual lesson. Generating the Marp slide deck directly from the provided wiki content.
-
 ---
 marp: true
 theme: uncover

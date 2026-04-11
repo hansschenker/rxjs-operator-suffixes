@@ -5,16 +5,16 @@ title: "Memory leaks: takeUntil, take(1), async pipe equivalents"
 ---
 
 # Memory leaks: takeUntil, take(1), async pipe equivalents
-> Every `subscribe()` call you forget to clean up keeps running — silently consuming memory and firing callbacks into components that no longer exist.
+> Every `subscribe()` call you forget to clean up keeps running — silently consuming memory and firing callbacks into objects that no longer exist.
 
 ---
 
 ## Core Concept
 - Every `subscribe()` returns a **Subscription** handle; the Observable runs until that handle is explicitly closed
-- Streams like `interval`, `fromEvent`, and retried HTTP chains **never self-complete** — the framework will not clean them up for you
+- Streams like `interval`, `fromEvent`, and retried HTTP chains **never self-complete** — nothing cleans them up for you
 - **"Not unsubscribing from long-lived Observables is the #1 source of memory leaks in RxJS"**
-- Repeated navigation without teardown stacks fresh subscriptions on every visit — the same callback fires multiple times per emission
-- Three declarative exit strategies exist: `takeUntil` (lifecycle-scoped), `take(n)` (one-shot), `async` pipe (framework-owned)
+- Repeated construction without teardown stacks fresh subscriptions — the same callback fires multiple times per emission
+- Three declarative exit strategies: `takeUntil` (lifecycle-scoped), `take(n)` (one-shot), `Subscription.unsubscribe()` (imperative escape hatch)
 
 ---
 
@@ -30,9 +30,11 @@ take(1) — auto-completes after the first value, no signal needed:
 source$:  --1--2--3--...
 output:   --1|
 
-async pipe — Angular subscribes on init, unsubscribes on destroy:
-template: {{ data$ | async }}
-           ↑ zero manual subscribe/unsubscribe in the component class
+Subscription store — collect handles, bulk-unsubscribe on teardown:
+const subs = new Subscription();
+subs.add(a$.subscribe(...));
+subs.add(b$.subscribe(...));
+subs.unsubscribe(); // closes all at once
 ```
 
 ---
@@ -40,17 +42,17 @@ template: {{ data$ | async }}
 ## Common Mistake
 
 ```typescript
-// ❌ WRONG: naked subscribe with no teardown
-@Component({ selector: 'app-search', template: '...' })
-export class SearchComponent implements OnInit {
-  results: Result[] = [];
+// ❌ WRONG: naked subscribe with no teardown in a plain TS component
+class SearchWidget {
+  private results: Result[] = [];
 
-  ngOnInit() {
-    // Subscription never closes — survives component destruction.
-    // Each navigation creates another subscription on the same stream.
-    // Stale callbacks write into a dead component on every emission. 🚨
-    this.searchService.results$.subscribe(r => {
+  init() {
+    // Subscription never closes — survives widget removal from DOM.
+    // Each time the widget is re-created, another subscription stacks up.
+    // Stale callbacks mutate a dead object on every emission. 🚨
+    searchService.results$.subscribe(r => {
       this.results = r;
+      this.render();
     });
   }
 }
@@ -61,32 +63,29 @@ export class SearchComponent implements OnInit {
 ## The Right Way
 
 ```typescript
-// ✅ Option 1 — takeUntil for any long-lived stream
-@Component({ selector: 'app-search', template: '...' })
-export class SearchComponent implements OnInit, OnDestroy {
-  private readonly destroy$ = new Subject<void>(); // one per component
-  results: Result[] = [];
+class SearchWidget {
+  private readonly destroy$ = new Subject<void>();
+  private results: Result[] = [];
 
-  ngOnInit() {
-    this.searchService.results$.pipe(
-      takeUntil(this.destroy$)  // unsubscribes the moment destroy$ emits
-    ).subscribe(r => { this.results = r; });
+  init() {
+    // ✅ takeUntil — any long-lived stream scoped to this widget's lifetime
+    searchService.results$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(r => { this.results = r; this.render(); });
+
+    // ✅ take(1) — one-shot read; completes automatically, no signal needed
+    userService.profile$.pipe(take(1))
+      .subscribe(profile => this.setTitle(profile.name));
   }
 
-  ngOnDestroy() {
-    this.destroy$.next();      // signal every takeUntil on this component
-    this.destroy$.complete();  // release the Subject itself
+  destroy() {
+    this.destroy$.next();     // signal every takeUntil subscribed on this widget
+    this.destroy$.complete(); // release the Subject itself
   }
 }
-
-// ✅ Option 2 — take(1) for one-shot initialisation reads
-this.user$.pipe(take(1)).subscribe(u => this.initForm(u));
-
-// ✅ Option 3 — async pipe; the framework owns the full lifecycle
-// <li *ngFor="let r of results$ | async">{{ r.name }}</li>
 ```
 
 ---
 
 ## Key Rule
-> **Every subscription that can outlive its creator must have an explicit teardown — use `takeUntil` for lifecycle-scoped streams, `take(1)` for one-shots, and `async` pipe whenever the framework can own the subscription.**
+> **Every subscription that can outlive its creator must have an explicit teardown — use `takeUntil(destroy$)` for lifecycle-scoped streams and `take(1)` for one-shot reads; call `destroy$.next()` in your cleanup hook.**
