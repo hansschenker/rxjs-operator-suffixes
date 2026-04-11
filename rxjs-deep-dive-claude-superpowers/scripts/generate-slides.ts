@@ -111,9 +111,13 @@ function main(): void {
 		}
 
 		console.log(`gen   ${lesson.id}  ${lesson.title}`);
-		const content = generateSlide(lesson);
-		fs.writeFileSync(outPath, content, 'utf-8');
-		console.log(`done  → ${slug}.md`);
+		try {
+			const content = generateSlide(lesson);
+			fs.writeFileSync(outPath, content, 'utf-8');
+			console.log(`done  → ${slug}.md`);
+		} catch (err) {
+			console.error(`FAIL  ${lesson.id}  ${(err as Error).message.split('\n')[0]}`);
+		}
 	}
 }
 
