@@ -40,6 +40,6 @@ Then Consumer B subscribes. The subscriber function runs again, completely indep
 
 "Producer started" appears twice in the output — that's the proof. If the producer ran only once and shared the result, we'd see it once. But Observables are cold by default. Each subscription is a fresh start.
 
-This behaviour is the foundation for why RxJS is safe to use without worrying about shared mutable state between consumers. Each subscriber gets its own private execution context. And because complete() is called synchronously here, the subscriptions are also cleaned up immediately. There's nothing left running after each subscribe call returns. Full separation, zero coupling.
+This behaviour is the foundation for why RxJS is safe to use without worrying about shared mutable state between consumers. Each subscriber gets its own private execution context. And because complete() is called synchronously here, the subscriptions are also cleaned up immediately. There's nothing left running after each subscribe call returns. Full separation, zero coupling. This is what makes Observable-based code composable and predictable — the contract is simple: define the producer logic once, let each consumer trigger its own independent execution. No global state, no coordination problems, no race conditions to debug.
 
 ---
