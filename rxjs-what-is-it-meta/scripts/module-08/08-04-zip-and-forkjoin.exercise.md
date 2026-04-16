@@ -21,9 +21,9 @@ interface UserProfile { id: number; name: string; }
 interface Permissions { canEdit: boolean; canDelete: boolean; }
 interface FeatureFlags { darkMode: boolean; }
 interface PageData {
-	profile: UserProfile | null;
-	permissions: Permissions | null;
-	flags: FeatureFlags | null;
+	profile: UserProfile;      // BUG: does not handle degraded mode
+	permissions: Permissions;  // BUG: does not handle degraded mode
+	flags: FeatureFlags;       // BUG: does not handle degraded mode
 }
 
 // BUG: one failed source kills the entire forkJoin

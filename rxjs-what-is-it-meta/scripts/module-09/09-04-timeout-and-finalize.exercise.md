@@ -14,8 +14,8 @@ An HTTP request for a large report sometimes stalls for 30+ seconds with no resp
 
 ```typescript
 import { ajax } from 'rxjs/ajax';
-import { map } from 'rxjs/operators';
-import { Observable } from 'rxjs';
+import { map, timeout, catchError, finalize } from 'rxjs/operators';
+import { Observable, of, throwError, TimeoutError } from 'rxjs';
 
 interface ReportData { rows: unknown[]; generatedAt: string; }
 

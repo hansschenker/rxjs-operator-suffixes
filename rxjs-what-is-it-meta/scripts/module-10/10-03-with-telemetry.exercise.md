@@ -13,8 +13,8 @@ The `searchOnQuery` operator needs logging, error tracking, and duration metrics
 ## Starter Code
 
 ```typescript
-import { Observable, OperatorFunction } from 'rxjs';
-import { tap, catchError, finalize, throwError, switchMap } from 'rxjs/operators';
+import { Observable, OperatorFunction, throwError } from 'rxjs';
+import { tap, catchError, finalize, switchMap } from 'rxjs/operators';
 import { ajax } from 'rxjs/ajax';
 
 interface TelemetryService {
