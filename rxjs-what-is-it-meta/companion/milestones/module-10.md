@@ -22,7 +22,9 @@ wraps any `OperatorFunction<T, T>` with observability without modifying it:
 
 ```typescript
 // One-line change in app.ts — full telemetry, no refactor:
-searchOnQuery().pipe(withTelemetry('searchOnQuery', searchOnQuery(), consoleTelemetry))
+query$.pipe(
+    withTelemetry('searchOnQuery', searchOnQuery(), consoleTelemetry),
+)
 ```
 
 ## Testing with TestScheduler

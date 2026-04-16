@@ -25,5 +25,8 @@ export const action$ = new Subject<Action>();
 export const state$ = action$.pipe(
 	scan(reducer, initialState),
 	startWith(initialState),
+	// refCount: true — source resets when all subscribers disconnect (e.g. test teardown).
+	// For a long-lived SPA this is the correct choice; all subscribers stay active for the
+	// app's lifetime. Use refCount: false only if you need post-completion replay.
 	shareReplay({ bufferSize: 1, refCount: true }),
 );

@@ -1,6 +1,5 @@
-import { Observable } from 'rxjs';
-import { withLatestFrom, filter, map } from 'rxjs/operators';
-import { BehaviorSubject } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { withLatestFrom, filter } from 'rxjs/operators';
 
 export interface CurrentUser {
 	id: number;
@@ -16,6 +15,5 @@ export function withCurrentUser<T>() {
 		source$.pipe(
 			withLatestFrom(currentUser$),
 			filter((pair): pair is [T, CurrentUser] => pair[1] !== null),
-			map(([value, user]: [T, CurrentUser | null]): [T, CurrentUser] => [value, user as CurrentUser]),
 		);
 }

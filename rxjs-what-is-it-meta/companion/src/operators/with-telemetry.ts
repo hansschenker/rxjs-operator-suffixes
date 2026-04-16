@@ -1,4 +1,4 @@
-import { Observable, OperatorFunction, throwError } from 'rxjs';
+import { Observable, OperatorFunction, throwError, defer } from 'rxjs';
 import { tap, catchError, finalize } from 'rxjs/operators';
 
 export interface TelemetryService {
@@ -19,17 +19,20 @@ export function withTelemetry<T>(
 	operator: OperatorFunction<T, T>,
 	telemetry: TelemetryService,
 ): OperatorFunction<T, T> {
-	return (source$: Observable<T>): Observable<T> => {
-		const startTime = Date.now();
-		return source$.pipe(
-			tap(value => telemetry.log(`${operatorName}:input`, value)),
-			operator,
-			tap(value => telemetry.log(`${operatorName}:output`, value)),
-			catchError((err: unknown) => {
-				telemetry.trackError(operatorName, err);
-				return throwError(() => err);
-			}),
-			finalize(() => telemetry.trackDuration(operatorName, Date.now() - startTime)),
-		);
-	};
+	return (source$: Observable<T>): Observable<T> =>
+		// defer() delays execution until subscription — startTime is captured per subscription,
+		// not when the operator is piped, giving accurate per-subscription duration tracking.
+		defer(() => {
+			const startTime = Date.now();
+			return source$.pipe(
+				tap(value => telemetry.log(`${operatorName}:input`, value)),
+				operator,
+				tap(value => telemetry.log(`${operatorName}:output`, value)),
+				catchError((err: unknown) => {
+					telemetry.trackError(operatorName, err);
+					return throwError(() => err);
+				}),
+				finalize(() => telemetry.trackDuration(operatorName, Date.now() - startTime)),
+			);
+		});
 }
