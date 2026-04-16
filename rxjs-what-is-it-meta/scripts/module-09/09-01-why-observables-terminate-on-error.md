@@ -3,6 +3,7 @@ module: 9
 lesson: "9.1"
 title: Why Observables terminate on error — and why that is correct
 key_insight: When an Observable errors, it terminates permanently. This is not a limitation — it is a guarantee. An error is a definitive end state, and Observables that keep emitting after an error are undefined behavior.
+related: ["2.3", "9.2"]
 ---
 
 ## Hook

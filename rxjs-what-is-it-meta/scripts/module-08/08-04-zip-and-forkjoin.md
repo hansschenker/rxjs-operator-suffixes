@@ -3,6 +3,7 @@ module: 8
 lesson: "8.4"
 title: zip and forkJoin — pairing by index and parallel completion
 key_insight: zip pairs values by position across streams and emits progressively. forkJoin waits for all sources to complete and emits the final values once. Use zip for ordered pairing; forkJoin for parallel initialization.
+related: ["8.1", "8.5"]
 ---
 
 ## Hook

@@ -3,6 +3,7 @@ module: 5
 lesson: "5.3"
 title: The throttle and debounce families
 key_insight: throttle gives immediate feedback then blocks; debounce waits for silence then emits. Using debounce where you need responsiveness — or throttle where you need to wait for completion — ships a visibly broken interaction.
+related: ["5.2", "5.5"]
 ---
 
 ## Hook

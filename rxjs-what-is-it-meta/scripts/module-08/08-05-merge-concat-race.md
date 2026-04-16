@@ -3,6 +3,7 @@ module: 8
 lesson: "8.5"
 title: merge, concat, and race — interleaving, sequencing, and first-wins
 key_insight: merge, concat, and race do not combine values — they combine timing. merge interleaves, concat sequences, race takes the winner. These three cover every scenario where sources need to be ordered or raced rather than value-combined.
+related: ["8.1", "8.4"]
 ---
 
 ## Hook

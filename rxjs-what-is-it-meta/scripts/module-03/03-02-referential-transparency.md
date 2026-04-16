@@ -3,6 +3,7 @@ module: 3
 lesson: "3.2"
 title: Referential transparency — the Observable as a reusable blueprint
 key_insight: An Observable is referentially transparent until subscribe() is called — you can assign it, pass it, compose it, and duplicate it with zero side effects.
+related: ["3.1", "3.3", "3.4"]
 ---
 
 ## Hook

@@ -3,6 +3,7 @@ module: 3
 lesson: "3.1"
 title: Data and Logic are separate
 key_insight: In RxJS, Observable is the data and operators are the logic — the architecture enforces the functional programming separation of concerns whether you intend it or not.
+related: ["1.5", "3.2"]
 ---
 
 ## Hook

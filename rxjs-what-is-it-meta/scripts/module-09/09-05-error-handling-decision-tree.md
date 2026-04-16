@@ -3,6 +3,7 @@ module: 9
 lesson: "9.5"
 title: The error handling decision tree
 key_insight: Error handling in RxJS reduces to three strategies — recover, retry, rethrow — and the choice depends on whether the error is transient, permanent, or unknown. Everything else is a variation on these three.
+related: ["9.2", "9.3"]
 ---
 
 ## Hook

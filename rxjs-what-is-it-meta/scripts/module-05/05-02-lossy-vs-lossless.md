@@ -3,6 +3,7 @@ module: 5
 lesson: "5.2"
 title: Lossy vs lossless — the fundamental time tradeoff
 key_insight: Every time operator makes one binary choice — drop values to control rate (lossy) or group values to keep everything (lossless). Choose wrong and you either lose critical data or overwhelm the system.
+related: ["5.1", "5.3", "5.4", "5.5"]
 ---
 
 ## Hook

@@ -3,6 +3,7 @@ module: 2
 lesson: "2.1"
 title: What really happens when you subscribe
 key_insight: Calling subscribe() doesn't listen to an Observable — it creates a brand new execution of it. This single fact prevents the most common category of RxJS bugs.
+related: ["1.3", "2.3", "3.3"]
 ---
 
 ## Hook

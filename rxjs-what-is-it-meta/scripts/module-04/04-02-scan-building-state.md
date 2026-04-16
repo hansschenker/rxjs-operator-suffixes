@@ -3,6 +3,7 @@ module: 4
 lesson: "4.2"
 title: scan — building state from a stream
 key_insight: scan is the Observable equivalent of Array.reduce — but it emits every intermediate accumulation, making it the natural primitive for reactive state management.
+related: ["4.1", "4.3"]
 ---
 
 ## Hook

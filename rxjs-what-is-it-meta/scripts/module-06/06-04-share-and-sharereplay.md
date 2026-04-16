@@ -3,6 +3,7 @@ module: 6
 lesson: "6.4"
 title: share() and shareReplay() — mechanics, configuration, and gotchas
 key_insight: share() is a live radio broadcast — late subscribers miss everything already aired. shareReplay(1) is YouTube — late subscribers start from the last frame. Choosing wrong causes either stale data or memory leaks.
+related: ["6.1", "6.5", "10.5"]
 ---
 
 ## Hook

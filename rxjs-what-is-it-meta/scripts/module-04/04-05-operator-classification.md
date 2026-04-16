@@ -3,6 +3,7 @@ module: 4
 lesson: "4.5"
 title: Operator classification — T-only vs T+time vs time-only
 key_insight: Classifying an operator as T-only, T+time, or time-only before using it tells you its cost, its testability, and which layer of bugs to investigate. One classification does three jobs at once.
+related: ["4.4", "5.1", "10.5"]
 ---
 
 ## Hook

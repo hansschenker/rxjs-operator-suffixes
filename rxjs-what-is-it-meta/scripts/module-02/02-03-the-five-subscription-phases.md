@@ -3,6 +3,7 @@ module: 2
 lesson: "2.3"
 title: The five subscription phases
 key_insight: A Subscription is not just a cancel handle — it is a lifecycle tracker with five ordered phases. Only one Error or Complete is ever delivered, and after either, the subscription is permanently closed.
+related: ["2.1", "2.4", "9.1"]
 ---
 
 ## Hook

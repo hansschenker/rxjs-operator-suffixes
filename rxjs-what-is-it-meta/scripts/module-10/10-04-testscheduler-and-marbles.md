@@ -3,6 +3,7 @@ module: 10
 lesson: "10.4"
 title: Testing with TestScheduler and marble diagrams
 key_insight: TestScheduler lets you fake time in marble notation, making every time-based operator deterministic and synchronous in tests — a marble test for a debounced search proves behavior that would take 300ms in real time, in under 1ms.
+related: ["5.1", "10.5"]
 ---
 
 ## Hook

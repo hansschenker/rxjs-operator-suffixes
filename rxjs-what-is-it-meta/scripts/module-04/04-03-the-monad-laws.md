@@ -3,6 +3,7 @@ module: 4
 lesson: "4.3"
 title: The monad laws — why Observable composes predictably
 key_insight: Observable obeys the monad laws, which guarantees that operator chains always compose correctly regardless of how you nest or reorder them — the foundation of safe refactoring.
+related: ["4.1", "4.2", "1.2"]
 ---
 
 ## Hook

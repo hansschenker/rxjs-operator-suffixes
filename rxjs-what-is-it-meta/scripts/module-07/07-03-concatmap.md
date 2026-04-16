@@ -3,6 +3,7 @@ module: 7
 lesson: "7.3"
 title: concatMap — serial, ordered execution
 key_insight: concatMap never subscribes to a new inner Observable until the previous one completes, enforcing strict ordering — and silently building an unbounded queue if inner Observables are slow.
+related: ["7.1", "7.2"]
 ---
 
 ## Hook

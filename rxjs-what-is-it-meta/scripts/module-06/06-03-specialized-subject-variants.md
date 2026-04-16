@@ -3,6 +3,7 @@ module: 6
 lesson: "6.3"
 title: The three specialized Subject variants
 key_insight: BehaviorSubject, ReplaySubject, and AsyncSubject each answer a different question about time — What is the current value? What were the last N values? What was the final value?
+related: ["6.2", "6.4"]
 ---
 
 ## Hook

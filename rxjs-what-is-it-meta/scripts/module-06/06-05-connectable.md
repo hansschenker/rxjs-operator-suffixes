@@ -3,6 +3,7 @@ module: 6
 lesson: "6.5"
 title: connectable() — manual control over when the producer starts
 key_insight: connectable() exposes the producer lifecycle directly — you control when it starts and stops. share() and shareReplay() are presets built on connectable() that automate this lifecycle via refCount.
+related: ["6.4", "2.5"]
 ---
 
 ## Hook

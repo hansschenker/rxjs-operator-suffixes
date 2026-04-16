@@ -3,6 +3,7 @@ module: 10
 lesson: "10.3"
 title: withTelemetry — aspect-oriented operators
 key_insight: withTelemetry is a higher-order operator wrapper that adds logging, metrics, and error tracking to any operator without changing its logic — Aspect-Oriented Programming applied to streams.
+related: ["10.2", "3.4"]
 ---
 
 ## Hook

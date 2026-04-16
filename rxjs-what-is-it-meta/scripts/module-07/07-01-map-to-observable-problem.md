@@ -3,6 +3,7 @@ module: 7
 lesson: "7.1"
 title: The "map to Observable" problem
 key_insight: When you map a value to an async operation, you get Observable<Observable<T>> — which is useless. The four flattening operators exist to solve this single problem, each with a different concurrency policy.
+related: ["4.1", "7.2", "7.3", "7.4", "7.5"]
 ---
 
 ## Hook

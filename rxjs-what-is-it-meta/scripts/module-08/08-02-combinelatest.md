@@ -3,6 +3,7 @@ module: 8
 lesson: "8.2"
 title: combineLatest — reactive derived state
 key_insight: combineLatest emits whenever any source emits, always combining the latest value from every source. It is the reactive equivalent of a derived computation — automatically recomputed when any dependency changes.
+related: ["8.1", "8.3"]
 ---
 
 ## Hook

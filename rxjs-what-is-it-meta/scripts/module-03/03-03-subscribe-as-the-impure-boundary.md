@@ -3,6 +3,7 @@ module: 3
 lesson: "3.3"
 title: subscribe() as the single impure boundary
 key_insight: subscribe() is not an RxJS feature — it is the exit from functional programming into the real world. Keeping it at the outer edge of your application is the entire discipline of reactive architecture.
+related: ["2.1", "3.2", "1.5"]
 ---
 
 ## Hook

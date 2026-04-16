@@ -3,6 +3,7 @@ module: 1
 lesson: "1.5"
 title: The 3-Step Workflow — enter, transform, exit
 key_insight: Every RxJS program has exactly three zones — impure entry, pure transformation, impure exit. Code that puts side effects in the middle zone is the source of most RxJS bugs.
+related: ["3.1", "3.3"]
 ---
 
 ## Hook

@@ -3,6 +3,7 @@ module: 7
 lesson: "7.5"
 title: exhaustMap — ignore while busy, prevent double-submit
 key_insight: exhaustMap ignores all new outer values while an inner Observable is active, making double-execution structurally impossible — and intentionally dropping user intent if the inner Observable takes too long.
+related: ["7.1", "7.4"]
 ---
 
 ## Hook

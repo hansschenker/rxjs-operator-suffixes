@@ -3,6 +3,7 @@ module: 3
 lesson: "3.4"
 title: tap vs map — declaring side effects without breaking the pipeline
 key_insight: map() must return a transformed value and must be pure. tap() declares a side effect that runs later without altering the emitted value. Confusing the two breaks referential transparency silently — no compiler error, no runtime exception.
+related: ["3.2", "3.3", "10.3"]
 ---
 
 ## Hook

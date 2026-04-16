@@ -3,6 +3,7 @@ module: 7
 lesson: "7.2"
 title: mergeMap — parallel, unbounded concurrency
 key_insight: mergeMap subscribes to every inner Observable immediately and concurrently with no limit. This makes it ideal for independent parallel work — and a source of connection explosions on fast sources.
+related: ["7.1", "7.3"]
 ---
 
 ## Hook

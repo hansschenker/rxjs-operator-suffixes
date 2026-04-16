@@ -3,6 +3,7 @@ module: 5
 lesson: "5.5"
 title: Choosing the right rate-limiting operator
 key_insight: The rate-limiting decision reduces to two questions — can data be lost, and do I need leading, trailing, or periodic behavior? Answer both and the operator selects itself.
+related: ["5.2", "5.3", "5.4"]
 ---
 
 ## Hook

@@ -3,6 +3,7 @@ module: 1
 lesson: "1.2"
 title: The Mathematical Dual — how IEnumerable became IObservable
 key_insight: IObservable is the mathematical dual of IEnumerable — flip the arrows on every method signature and you get push from pull, giving RxJS its entire operator vocabulary for free.
+related: ["1.1", "1.3", "4.3"]
 ---
 
 ## Hook

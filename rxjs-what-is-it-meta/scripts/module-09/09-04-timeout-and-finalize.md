@@ -3,6 +3,7 @@ module: 9
 lesson: "9.4"
 title: timeout, finalize, and lifecycle cleanup
 key_insight: timeout fails the stream if no emission arrives within a deadline — it does not slow down a fast stream, it terminates a frozen one. finalize runs cleanup unconditionally regardless of how the stream ended.
+related: ["2.4", "9.2"]
 ---
 
 ## Hook

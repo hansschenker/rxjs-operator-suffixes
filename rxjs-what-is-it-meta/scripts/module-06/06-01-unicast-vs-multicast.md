@@ -3,6 +3,7 @@ module: 6
 lesson: "6.1"
 title: Unicast vs multicast — the consumer behavior distinction
 key_insight: Hot/Cold describes the producer; Unicast/Multicast describes the consumer. A cold Observable is always unicast. Understanding both axes independently prevents the most common multicasting bugs.
+related: ["2.2", "6.2", "6.4"]
 ---
 
 ## Hook

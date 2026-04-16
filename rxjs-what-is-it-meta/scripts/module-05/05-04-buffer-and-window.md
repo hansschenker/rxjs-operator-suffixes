@@ -3,6 +3,7 @@ module: 5
 lesson: "5.4"
 title: The buffer and window families
 key_insight: buffer and window are the lossless cousins of throttle and debounce — they collect all values into arrays or inner Observables instead of dropping them. Use them whenever losing a value is unacceptable.
+related: ["5.2", "5.5"]
 ---
 
 ## Hook

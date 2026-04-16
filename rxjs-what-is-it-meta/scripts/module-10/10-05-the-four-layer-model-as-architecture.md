@@ -3,6 +3,7 @@ module: 10
 lesson: "10.5"
 title: The 4-Layer Model as a complete architecture
 key_insight: The 4-Layer Model — Values, Time, Sharing, Flattening — is not a taxonomy for organising operators. It is a diagnostic framework: identify which layer the problem is in, and the fix becomes obvious.
+related: ["4.5", "5.2", "6.4", "7.1"]
 ---
 
 ## Hook

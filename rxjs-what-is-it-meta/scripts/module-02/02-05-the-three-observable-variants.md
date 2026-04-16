@@ -3,6 +3,7 @@ module: 2
 lesson: "2.5"
 title: The three Observable variants
 key_insight: The three Observable variants — Standard, Connectable, and Subject — differ on exactly one axis: when the producer starts. Everything about multicasting follows from that single difference.
+related: ["6.1", "6.2", "6.5"]
 ---
 
 ## Hook

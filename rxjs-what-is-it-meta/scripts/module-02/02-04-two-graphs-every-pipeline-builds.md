@@ -3,6 +3,7 @@ module: 2
 lesson: "2.4"
 title: Two graphs every pipeline builds
 key_insight: Every RxJS pipeline silently builds two graphs — a static dependency graph describing how values flow, and a dynamic subscription graph describing who tears down whom. Most memory leaks come from losing track of the second.
+related: ["2.3", "9.4"]
 ---
 
 ## Hook

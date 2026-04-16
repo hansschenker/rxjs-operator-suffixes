@@ -3,6 +3,7 @@ module: 10
 lesson: "10.1"
 title: The Alias + Wrap pattern — domain-specific operator naming
 key_insight: The Alias + Wrap pattern renames RxJS operators with domain-specific names, making the pipeline readable to domain experts and the operators testable in isolation by RxJS experts — a clean seam between the two.
+related: ["3.5", "10.2"]
 ---
 
 ## Hook

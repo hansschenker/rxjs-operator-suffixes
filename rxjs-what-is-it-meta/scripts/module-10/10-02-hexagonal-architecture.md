@@ -3,6 +3,7 @@ module: 10
 lesson: "10.2"
 title: Hexagonal architecture with RxJS
 key_insight: Hexagonal architecture applied to RxJS puts custom domain operators at the core, RxJS as infrastructure inside them, and components as adapters. The domain never imports from the infrastructure layer — RxJS is an implementation detail.
+related: ["10.1", "10.3"]
 ---
 
 ## Hook

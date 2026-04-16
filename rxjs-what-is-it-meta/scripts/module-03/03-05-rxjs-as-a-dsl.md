@@ -3,6 +3,7 @@ module: 3
 lesson: "3.5"
 title: RxJS as a DSL for time-varying values
 key_insight: RxJS is a Domain-Specific Language for time-varying values — like SQL for sets of rows, Regex for text, CSS for visual style. The operator vocabulary is the grammar of a language, not an arbitrary list of functions.
+related: ["1.1", "3.1", "10.1"]
 ---
 
 ## Hook

@@ -3,6 +3,7 @@ module: 8
 lesson: "8.3"
 title: withLatestFrom — actions with context
 key_insight: withLatestFrom emits only when the primary source emits, sampling the latest value from secondary sources as context. Secondary source emissions never trigger output — making it the correct operator for actions that need context.
+related: ["8.1", "8.2"]
 ---
 
 ## Hook

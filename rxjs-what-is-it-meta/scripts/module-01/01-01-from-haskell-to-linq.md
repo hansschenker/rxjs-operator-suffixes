@@ -3,6 +3,7 @@ module: 1
 lesson: "1.1"
 title: From Haskell to LINQ — the intellectual lineage of RxJS
 key_insight: RxJS didn't invent its operator library — it copied 10 years of LINQ knowledge that already existed for arrays, making async programming feel familiar on day one.
+related: ["1.2", "3.5"]
 ---
 
 ## Hook

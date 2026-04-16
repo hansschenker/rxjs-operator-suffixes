@@ -3,6 +3,7 @@ module: 4
 lesson: "4.4"
 title: T-only operators — the purely value-based family
 key_insight: T-only operators are the cheapest operators in RxJS — no timers, no buffers, no scheduler dependency. They transform values synchronously, and every bug they cause is a value-logic bug, not a timing bug.
+related: ["4.5", "5.1"]
 ---
 
 ## Hook

@@ -3,6 +3,7 @@ module: 6
 lesson: "6.2"
 title: Subject as a multicast proxy
 key_insight: A Subject is simultaneously an Observer and an Observable — it receives values via next() and forwards them to all subscribers simultaneously, making it the primitive behind all multicasting in RxJS.
+related: ["6.1", "6.3"]
 ---
 
 ## Hook

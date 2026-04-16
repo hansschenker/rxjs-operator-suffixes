@@ -3,6 +3,7 @@ module: 4
 lesson: "4.1"
 title: The three primitives — map, filter, flatMap
 key_insight: Every value-based operator in RxJS is a composition of three primitives — map, filter, and flatMap. Master these three and you can derive all 60+ value operators from first principles.
+related: ["4.3", "7.1"]
 ---
 
 ## Hook

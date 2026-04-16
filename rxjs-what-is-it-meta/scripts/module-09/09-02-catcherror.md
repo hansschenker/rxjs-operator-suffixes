@@ -3,6 +3,7 @@ module: 9
 lesson: "9.2"
 title: catchError — recovery strategies
 key_insight: catchError intercepts a terminated error stream and returns a replacement Observable. The replacement can be a fallback value, an empty stream, or a rethrow — but it is always a new Observable, because the old stream is gone.
+related: ["9.1", "9.3", "9.5"]
 ---
 
 ## Hook

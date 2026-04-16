@@ -3,6 +3,7 @@ module: 1
 lesson: "1.3"
 title: Iterator + Observer — the two GoF patterns RxJS fuses
 key_insight: RxJS is what you get when you fuse the Iterator pattern (sequence operators) with the Observer pattern (push delivery) — each pattern alone is incomplete; together they define reactive programming.
+related: ["1.2", "2.1"]
 ---
 
 ## Hook

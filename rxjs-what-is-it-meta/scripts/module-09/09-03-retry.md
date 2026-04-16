@@ -3,6 +3,7 @@ module: 9
 lesson: "9.3"
 title: retry and the resilience ladder
 key_insight: retry resubscribes to the source Observable from scratch after every error. This is powerful for transient failures — and dangerous for non-idempotent operations where repeating the request causes duplicate side effects.
+related: ["9.2", "9.5"]
 ---
 
 ## Hook

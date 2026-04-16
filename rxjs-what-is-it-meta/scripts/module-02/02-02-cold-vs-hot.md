@@ -3,6 +3,7 @@ module: 2
 lesson: "2.2"
 title: Cold vs Hot — the producer behavior distinction
 key_insight: Hot and Cold describe the producer, not the Observable. A cold Observable creates a fresh producer per subscriber; a hot Observable shares one already-running producer with everyone.
+related: ["6.1", "6.2"]
 ---
 
 ## Hook

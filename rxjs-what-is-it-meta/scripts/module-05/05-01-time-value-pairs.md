@@ -3,6 +3,7 @@ module: 5
 lesson: "5.1"
 title: Observables as sequences of (time, value) pairs
 key_insight: An Observable is not just a sequence of values — it is a sequence of (time, value) pairs. The time dimension is always present, even when you ignore it, and time operators make the implicit explicit.
+related: ["4.5", "5.2"]
 ---
 
 ## Hook

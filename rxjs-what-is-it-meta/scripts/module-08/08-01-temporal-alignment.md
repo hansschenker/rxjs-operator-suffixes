@@ -3,6 +3,7 @@ module: 8
 lesson: "8.1"
 title: Temporal alignment — the question behind every combining operator
 key_insight: Every combining operator answers exactly two questions — when do I emit, and which values do I use? There are only a handful of answers to each, and those answers map directly to specific operators.
+related: ["8.2", "8.3", "8.4", "8.5"]
 ---
 
 ## Hook

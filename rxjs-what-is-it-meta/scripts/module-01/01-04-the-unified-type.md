@@ -3,6 +3,7 @@ module: 1
 lesson: "1.4"
 title: The Unified Type — why Observable absorbs Arrays, Promises, and Events
 key_insight: Observable is not one of many async types — it subsumes all of them. An Array is an Observable that completes synchronously; a Promise is an Observable that emits exactly once.
+related: ["1.3", "2.5"]
 ---
 
 ## Hook

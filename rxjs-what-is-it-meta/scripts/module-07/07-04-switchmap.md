@@ -3,6 +3,7 @@ module: 7
 lesson: "7.4"
 title: switchMap — cancel on new, built for live queries
 key_insight: switchMap cancels the previous inner Observable every time a new outer value arrives. This makes it correct for live queries — and the wrong choice for any operation where every result must be processed.
+related: ["7.1", "7.5"]
 ---
 
 ## Hook
