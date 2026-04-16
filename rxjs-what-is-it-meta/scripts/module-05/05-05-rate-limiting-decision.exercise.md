@@ -13,7 +13,7 @@ A developer is building a responsive dashboard with four event sources that all 
 ## Starter Code
 
 ```typescript
-import { fromEvent } from 'rxjs';
+import { fromEvent, interval, Observable } from 'rxjs';
 import {
 	map, debounceTime, throttleTime, auditTime, sampleTime,
 } from 'rxjs/operators';
@@ -41,6 +41,11 @@ const search$ = fromEvent<Event>(searchInput, 'input').pipe(
 	map((e: Event) => (e.target as HTMLInputElement).value),
 );
 const autocomplete$ = search$.pipe(/* ??? */);
+
+// Source E: A server-sent dashboard metric that arrives continuously.
+// You need to sample it at fixed 2-second intervals regardless of how fast it emits.
+const metric$ = interval(200).pipe(map(i => ({ value: i * 3.14, unit: 'rps' })));
+const sampledMetric$: Observable<{ value: number; unit: string }> = /* ??? */;
 ```
 
 ## Task
@@ -48,7 +53,8 @@ const autocomplete$ = search$.pipe(/* ??? */);
 1. For each of the four sources, answer the two framework questions: (a) can data be lost without breaking correctness? (b) should the first value fire immediately (leading), the last value after silence (trailing), or a periodic sample?
 2. Apply the correct operator to each source. Choose from: `throttleTime`, `debounceTime`, `auditTime`, `sampleTime`. Justify each in one sentence.
 3. Explain why `debounceTime` applied to Source A (scroll) produces a broken UX: describe the specific failure mode when the user scrolls continuously for 3 seconds.
+4. Implement `sampledMetric$` for Source E using the operator that samples at fixed periodic intervals regardless of emission rate. Explain in one sentence why `throttleTime` would give different (wrong) behavior here.
 
 ## Hint
 
-Two questions decide everything: (1) "Can I drop intermediate values?" — if yes, lossy strategies are fine. (2) "Do I want the first value (leading), the last value after a pause (trailing), or a regular sample?" Leading + lossy = `throttleTime({ leading: true, trailing: false })`. Trailing after silence = `debounceTime`. Trailing at end of window = `auditTime`. Periodic sample regardless of activity = `sampleTime`.
+Two questions decide everything: (1) "Can I drop intermediate values?" — if yes, lossy strategies are fine. (2) "Do I want the first value (leading), the last value after a pause (trailing), or a regular sample?" Leading + lossy = `throttleTime({ leading: true, trailing: false })`. Trailing after silence = `debounceTime`. Trailing at end of window = `auditTime`. Periodic sample regardless of activity = `sampleTime`. Periodic sampling at fixed intervals regardless of source rate = `sampleTime` — `throttleTime` would only fire on the leading edge of each window and stay silent if the source goes quiet, so it is wrong when you need a guaranteed tick every N ms.

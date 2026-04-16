@@ -25,6 +25,10 @@ const shared$ = button$.pipe(
 
 const sub1 = shared$.subscribe((v: number) => console.log('A:', v));
 const sub2 = shared$.subscribe((v: number) => console.log('B:', v));
+
+// EXERCISE: Implement a helper that tells you how many active subscriptions share$ currently has.
+// Hint: share() uses refCount internally — what does that mean for the source subscription?
+let activeCount: number = /* ??? */;
 ```
 
 ## Task
@@ -32,6 +36,7 @@ const sub2 = shared$.subscribe((v: number) => console.log('B:', v));
 1. Draw the **dependency graph**: boxes for `button$`, `timer$`, `shared$`; arrows showing value flow; label each edge with the operator connecting them.
 2. Draw the **subscription graph**: boxes for `sub1`, `sub2`, the `share()` internal subscription, and each source subscription; arrows showing which node tears down which when `unsubscribe()` is called.
 3. Answer: if only `sub1.unsubscribe()` is called, does the `button$` event listener get removed? Why or why not? What must happen for it to be removed?
+4. Implement `activeCount` — write an expression or short code snippet that would let you observe how many consumers are currently sharing the `share()` internal subscription. (Hint: `share()` unsubscribes from the source when `activeCount` reaches 0.)
 
 ## Hint
 

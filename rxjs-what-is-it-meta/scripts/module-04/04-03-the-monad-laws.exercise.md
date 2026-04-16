@@ -35,7 +35,7 @@ async function testLeftIdentity(): Promise<void> {
 
 // Law 2 — Right identity: obs$.pipe(mergeMap(of)) ≡ obs$
 async function testRightIdentity(): Promise<void> {
-	const obs$ = /* ??? create a simple Observable */;
+	const obs$: Observable<number> = of(1, 2, 3); // EXERCISE: replace with your own Observable
 	const left  = await collect(obs$.pipe(mergeMap(of)));
 	const right = await collect(/* ??? same obs$ */);
 	console.assert(JSON.stringify(left) === JSON.stringify(right), 'Right identity failed');
@@ -43,13 +43,13 @@ async function testRightIdentity(): Promise<void> {
 
 // Law 3 — Associativity: obs$.pipe(mergeMap(f), mergeMap(g)) ≡ obs$.pipe(mergeMap(x => f(x).pipe(mergeMap(g))))
 async function testAssociativity(): Promise<void> {
-	const obs$ = /* ??? */;
+	const obs$: Observable<number> = of(1, 2, 3); // EXERCISE: replace with your own Observable
 	const left  = await collect(obs$.pipe(mergeMap(f), mergeMap(g)));
 	const right = await collect(obs$.pipe(mergeMap((v: number) => f(v).pipe(mergeMap(g)))));
 	console.assert(JSON.stringify(left) === JSON.stringify(right), 'Associativity failed');
 }
 
-// VIOLATION: this breaks left identity — why?
+// QUESTION: does impureF violate the monad law itself, or only the safety guarantee the law provides?
 const impureF = (n: number): Observable<number> => {
 	console.log('side effect!'); // called once by of(x).pipe(mergeMap(impureF))
 	return of(n * 2);

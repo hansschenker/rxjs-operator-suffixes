@@ -31,6 +31,8 @@ const zipped$ = zip(sync$, async$);
 const timedSync$  = sync$.pipe(/* ??? */);
 const timedAsync$ = async$.pipe(/* ??? */);
 
+// Note: run this block inside a Vitest or Jest test (import { describe, test, expect } from 'vitest')
+// TestScheduler requires a test runner for the expect() calls to work
 // EXERCISE 3: write a TestScheduler marble test that verifies the timing
 const scheduler = new TestScheduler((actual, expected) => {
 	// ??? use expect(actual).toEqual(expected)
