@@ -35,12 +35,17 @@ function searchFacade(query$: Observable<string>): Observable<string> {
 // Input:  '--a-----------a--|'
 // Output: '???' — fill in the expected marble
 
+// Scenario 3: timeout operator — stream must emit within 5000ms or error
+// Input (emits too late): '-'.repeat(501) + '(a|)'  (a arrives at frame 5010ms)
+// Output: '???' — should error at 5000ms, not emit a
+// Use: timeout({ each: 5000 })
+
 const scheduler = new TestScheduler((actual, expected) =>
 	expect(actual).toEqual(expected),
 );
 
-scheduler.run(({ hot, expectObservable }) => {
-	// EXERCISE: implement both test scenarios using hot() and expectObservable()
+scheduler.run(({ hot, cold, expectObservable }) => {
+	// EXERCISE: implement all three test scenarios using hot()/cold() and expectObservable()
 });
 ```
 
@@ -48,7 +53,8 @@ scheduler.run(({ hot, expectObservable }) => {
 
 1. Implement Scenario 1 inside `scheduler.run`: define the hot input marble and predict the expected output marble, accounting for the 300ms (30-frame) debounce delay from the last emission before the pause.
 2. Implement Scenario 2: show that a repeated identical value after debounce is suppressed by `distinctUntilChanged` and does not appear in the output.
-3. Add a plain-English comment next to each `expectObservable` call explaining what business behaviour it verifies.
+3. Implement Scenario 3: write a `cold()` source that emits a value at frame 5010ms and apply `timeout({ each: 5000 })`; assert that the output errors at frame 5000ms with a `TimeoutError` before the value arrives.
+4. Add a plain-English comment next to each `expectObservable` call explaining what business behaviour it verifies.
 
 ## Hint
 

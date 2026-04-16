@@ -41,9 +41,10 @@ autoSave$.subscribe((result: SaveResult) =>
 ## Task
 
 1. Explain in one sentence exactly what `switchMap` does when a new debounced keystroke arrives while a save is in-flight.
-2. Fix the pipeline with the operator that queues saves in order without cancelling any in-flight request.
-3. Explain when `exhaustMap` would be a better fix than your chosen operator and when it would be worse.
+2. Fix the pipeline using `exhaustMap`. Add a comment explaining why ignoring new save triggers while one is in-flight is the correct behaviour for this operation.
+3. Explain when `exhaustMap` would feel like a bug to the user (the keystroke that fired during a save is silently ignored) and how you would address that in the UI.
+4. Compare: what would `concatMap` do differently? When would `concatMap` be the right choice over `exhaustMap` for saves?
 
 ## Hint
 
-Does every save result need to be delivered? If yes, `switchMap` (cancel-on-new) is the wrong choice. The correct operator depends on whether saves must be ordered or just all complete.
+`switchMap` is cancel-on-new: exactly wrong for writes. `exhaustMap` is ignore-while-busy: the correct choice when a duplicate save triggered during an in-flight save should be discarded, not queued.
