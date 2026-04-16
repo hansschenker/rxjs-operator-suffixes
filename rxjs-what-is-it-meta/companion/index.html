@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<title>RxJS Course Companion</title>
+	<style>
+		body { font-family: monospace; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
+		#search { width: 100%; padding: 0.5rem; font-size: 1rem; }
+		#status { color: #666; font-size: 0.85rem; margin: 0.5rem 0; }
+		#results { list-style: none; padding: 0; }
+		#results li { padding: 0.4rem 0; border-bottom: 1px solid #eee; }
+		#error { color: red; }
+	</style>
+</head>
+<body>
+	<h1>RxJS Search</h1>
+	<input id="search" type="text" placeholder="Search..." autocomplete="off" />
+	<div id="status"></div>
+	<div id="error"></div>
+	<ul id="results"></ul>
+	<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

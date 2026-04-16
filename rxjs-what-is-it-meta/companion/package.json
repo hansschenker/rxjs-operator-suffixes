@@ -1,0 +1,17 @@
+{
+	"name": "rxjs-course-companion",
+	"version": "1.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc && vite build",
+		"preview": "vite preview"
+	},
+	"dependencies": {
+		"rxjs": "^7.8.0"
+	},
+	"devDependencies": {
+		"typescript": "^5.0.0",
+		"vite": "^5.0.0"
+	}
+}
