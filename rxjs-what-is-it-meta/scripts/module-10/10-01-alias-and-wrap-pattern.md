@@ -68,3 +68,7 @@ The component that uses `dashboard$` imports only domain names. The `throttleTim
 - Wrap = add error context, logging annotations, and injectable dependencies as function parameters
 - The function parameter (injected dependency) is the test seam — swap the real API for a mock in tests
 - Domain users read the names; RxJS experts maintain the internals; the function signature is the clean boundary between the two worlds
+
+## Pitfall
+
+Naming the wrapper function the same as the RxJS operator it wraps. `export const switchMap = (apiFn) => rxjsSwitchMap(...)` shadows the imported RxJS `switchMap` in any file that imports both, causing confusing "not a function" errors. Domain operator names must be distinct from the RxJS operators they wrap — that naming distinction is the entire point of the pattern.

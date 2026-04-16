@@ -55,3 +55,7 @@ initResult$.complete(); // now emits { theme: 'light' }
 - BehaviorSubject = current value; requires an initial value; `.value` getter available for synchronous reads
 - ReplaySubject(n) = last N values replayed on subscription; always bound the buffer size to prevent memory leaks
 - AsyncSubject = final value on complete; rarely used directly — prefer the `last()` operator on a regular stream
+
+## Pitfall
+
+Initializing a `BehaviorSubject` with `null` and not filtering it downstream. `BehaviorSubject<User | null>(null)` emits `null` immediately to every new subscriber before the real value loads. Consumers that do not handle `null` crash or render empty states. Either initialize with a meaningful default or use `filter((v): v is User => v !== null)` downstream.

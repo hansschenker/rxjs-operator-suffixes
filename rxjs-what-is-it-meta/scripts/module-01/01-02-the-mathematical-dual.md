@@ -48,3 +48,7 @@ Every RxJS operator you use (`map`, `filter`, `mergeMap`, `zip`) has a direct co
 - Duality is a mathematical proof, not an analogy — every `IEnumerable` operator has a structurally correct `IObservable` mirror
 - Pull: the consumer controls when values arrive; Push: the producer controls when values arrive
 - This proof is why RxJS shipped with 100+ operators from day one — they were derived from LINQ, not invented from scratch
+
+## Pitfall
+
+Confusing duality with symmetry. IEnumerable and IObservable are mathematical duals — arrows flipped — not mirrors. `map` on an array is synchronous and pull-based; `map` on an Observable is asynchronous and push-based. The names are the same because the structure is dual, not because the execution model is identical.

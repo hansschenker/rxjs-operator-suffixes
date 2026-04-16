@@ -45,3 +45,7 @@ With an unbounded `mergeMap` on a source of 500 image IDs, the browser would ope
 - `mergeMap` runs all inner Observables in parallel with no ordering guarantee on the output
 - Default concurrency is unlimited — always consider bounding it with the second argument on fast outer sources
 - Use when work items are independent and every result must be processed; wrong for writes that must complete in sequence or user actions that must not overlap
+
+## Pitfall
+
+Using `mergeMap` on a fast source without a concurrency limit. A mouse-move event at 60fps piped through `mergeMap(pos => expensiveRequest(pos))` opens 60 simultaneous requests per second. Use the second argument: `mergeMap(fn, 3)` to cap at 3 concurrent inner Observables, or switch to `exhaustMap` if only the latest matters.

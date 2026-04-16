@@ -45,3 +45,7 @@ Swapping the source for a test is only possible because data and logic were neve
 - Observable = inert data description; operators = pure logic that transforms it
 - `pipe()` composes logic over data without coupling the two
 - Swapping the data source for testing is only possible because data and logic are genuinely separate
+
+## Pitfall
+
+Passing an Observable into a function that immediately calls `.subscribe()` on it. The function should accept an Observable and return a transformed Observable — keeping logic in the operator chain. A function that subscribes is an exit point, not a transformation; it belongs at the boundary, not inside the pipeline.

@@ -50,3 +50,7 @@ saveBtn$.pipe(
 - Only the primary source triggers output; secondary sources provide context only
 - Secondary emissions update an internal "latest value" slot but never produce output on their own
 - Seed all secondaries with `startWith` to avoid silent suppression when the primary fires before secondaries have emitted
+
+## Pitfall
+
+Forgetting that `withLatestFrom` silently produces no output if the secondary source has not yet emitted. Primary emissions that arrive before the secondary has produced its first value are dropped with no error or warning. Guard with `startWith` on the secondary source when its first emission may be delayed.

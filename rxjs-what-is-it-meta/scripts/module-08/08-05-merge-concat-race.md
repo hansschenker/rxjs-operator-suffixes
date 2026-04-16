@@ -50,3 +50,7 @@ Both sources run in parallel; whichever device the user is on produces the event
 - `merge` = interleave all sources as they arrive; lossless; completes when all sources complete
 - `concat` = sequential subscription — next source starts only when previous completes; preserves order
 - `race` = first source to emit wins and all others are immediately unsubscribed; use for cache-or-network fallback patterns
+
+## Pitfall
+
+Using `concat` with an Observable that never completes as the first argument. `concat` subscribes to sources sequentially — the second source never subscribes until the first completes. An infinite first source means the second source is permanently blocked. Use `merge` if sources should run simultaneously, or `race` if the first-to-emit should win.

@@ -51,3 +51,7 @@ The `EventEmitter` pushes values, but you cannot compose it. The Observable push
 - Iterator = synchronous sequence operators (`map`, `filter`, `reduce`); Observer = async push delivery — each is incomplete alone
 - Observable fuses both: push delivery + sequence operators + formal completion semantics (`onComplete` / `onError`)
 - `EventEmitter` is Observer-only — no operators, no lazy evaluation, no built-in completion or cancellation
+
+## Pitfall
+
+Subclassing `Observable` to create a custom producer instead of using the constructor. `new Observable(subscriber => { ... })` is the correct pattern — the subscribe function is the producer. Subclassing bypasses the `SafeSubscriber` wrapper and breaks the post-error/complete emission contract.

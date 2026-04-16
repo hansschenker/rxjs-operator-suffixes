@@ -71,3 +71,7 @@ Remove the `return () => clearInterval(id)` and you have a leak — the timer ke
 - Five phases: Subscribe → Next* → (Error | Complete) → Unsubscribe
 - Error and Complete are both permanent terminal states — the subscription closes and the teardown runs after either
 - Always return a teardown function from custom Observables; omitting it is the most common cause of timer and listener leaks
+
+## Pitfall
+
+Relying on the `complete` phase to run cleanup. Subjects and interval-based Observables never emit `complete` on their own. Use `finalize()` for unconditional teardown — it fires on complete, error, and manual unsubscribe, making it the only reliable cleanup hook.

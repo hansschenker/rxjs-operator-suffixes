@@ -51,3 +51,7 @@ searchInput$.pipe(
 - `switchMap` cancels the previous inner Observable every time a new outer value arrives — at most one inner Observable is ever active
 - Correct for live queries, typeahead search, and profile loading where only the latest input is relevant
 - Wrong for writes, form submits, analytics, or any operation where every input must produce a result that is delivered downstream
+
+## Pitfall
+
+Using `switchMap` for a form save operation. If the user edits and submits twice in quick succession, `switchMap` cancels the first in-flight save when the second submit arrives. The server may never receive the first write, leaving data in an inconsistent state with no error in the console. Use `exhaustMap` (ignore while busy) or `concatMap` (queue) for write operations.

@@ -53,3 +53,7 @@ sharedData$.subscribe((user: User) => console.log('B:', user)); // receives cach
 - Observable = blueprint; `subscribe()` = execution — every call creates a new independent run
 - Two subscriptions to the same HTTP Observable fire two HTTP requests — this is by design, not a bug
 - Use `share()` or `shareReplay({ bufferSize: 1, refCount: true })` to share one execution across multiple subscribers
+
+## Pitfall
+
+Subscribing to an HTTP Observable in two components expecting them to share one request. Every `subscribe()` call creates a fresh producer execution — two subscribes fire two HTTP requests. The fix is `shareReplay({ bufferSize: 1, refCount: true })` to share one execution across multiple consumers.

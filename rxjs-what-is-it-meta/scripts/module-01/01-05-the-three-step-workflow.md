@@ -68,3 +68,7 @@ Notice that `tap` is the only concession inside Zone 2, and it is used only for 
 - Zone 1 (enter): creation operators convert impure real-world sources into pure Observable descriptions — the impure-to-pure boundary
 - Zone 2 (transform): pure operators inside `pipe()` only — no side effects, fully testable by swapping any source
 - Zone 3 (exit): one `subscribe()` call at the edge of the program — the only place where side effects legitimately belong
+
+## Pitfall
+
+Putting DOM updates or logging inside `map`. The pure transformation zone must contain only pure functions returning transformed values. A `map` that calls `console.log` or mutates state breaks referential transparency — the same pipe now has different behavior depending on whether it is subscribed once or ten times.

@@ -45,3 +45,7 @@ The first version silently hits the server twice. The second version hits it onc
 - Hot/Cold = producer axis; Unicast/Multicast = consumer axis — two independent dimensions
 - Cold always implies unicast; hot can be either unicast or multicast depending on subscriber count
 - `share()` converts cold-unicast to hot-multicast; use it when work must not be duplicated per subscriber
+
+## Pitfall
+
+Sharing the `Subscription` object between components thinking this shares the producer. A `Subscription` is a teardown handle — sharing it does not share the underlying producer. To share one producer across multiple consumers, the Observable itself must be multicast via `share()`, `shareReplay()`, or a `Subject`.

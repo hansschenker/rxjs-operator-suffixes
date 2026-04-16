@@ -50,3 +50,7 @@ const formValid$ = combineLatest([
 - Emits on any source change; always uses the latest cached value from every source
 - Requires all sources to have emitted at least once — use `startWith` to seed slow sources
 - Use `distinctUntilChanged` after the projection to suppress glitch emissions when sources fire synchronously
+
+## Pitfall
+
+Using `combineLatest` with sources that may be slow to emit their first value. `combineLatest` does not emit until all sources have emitted at least once. If one source is a slow HTTP call, the derived state is unavailable until that call completes. Add `startWith(defaultValue)` to slow sources to unblock the initial emission.

@@ -47,3 +47,7 @@ You already knew both of those operators. LINQ was the intellectual bridge that 
 - RxJS operators feel like array methods because they are — LINQ was the intellectual bridge that carried them from synchronous to asynchronous sequences
 - Erik Meijer's duality insight (2009) proved the same operator set applies to both pull and push collections, making the port possible without reinventing operators
 - Learning array operators (`map`, `filter`, `reduce`) counts as partial credit toward RxJS — you already speak the vocabulary
+
+## Pitfall
+
+Treating `map` and `filter` as syntactic conveniences rather than a mathematical consequence. Because RxJS operators derive from the IEnumerable/IObservable duality, they compose by law — not by coincidence. Developers who treat them as arbitrary functions miss that the composition guarantees come from the mathematical structure, not from RxJS's implementation choices.

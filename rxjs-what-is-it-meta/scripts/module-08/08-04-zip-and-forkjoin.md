@@ -53,3 +53,7 @@ The object form of `forkJoin` (rather than array) produces a named result object
 - `zip` = pair by index, emits progressively, memory risk when sources emit at mismatched rates
 - `forkJoin` = wait for all sources to complete, one final emission, errors if any source errors or never completes
 - Use `zip` for ordered positional correlation; use `forkJoin` for parallel page initialisation with individual `catchError` guards
+
+## Pitfall
+
+Using `zip` with one infinite Observable and one finite Observable. When the finite source completes, `zip` completes immediately — all buffered values from the infinite source are silently discarded. `zip` is designed for finite, positionally-correlated sources. For parallel async operations where you only need the last value, use `forkJoin`.

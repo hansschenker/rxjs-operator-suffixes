@@ -39,3 +39,7 @@ The practical read: throttle tells the user "I heard you right now"; debounce te
 - throttle = leading edge (immediate response, then block); debounce = trailing edge (wait for silence, emit last value)
 - Use throttle for responsive interactions where the user must feel immediate feedback: scroll, drag, resize, game input
 - Use debounce for "user has finished" signals where acting mid-burst is wrong: search typeahead, form validation, autocomplete
+
+## Pitfall
+
+Applying `debounceTime` to a button click that must always fire at least once per click. If the user holds the button down continuously, `debounceTime` never fires — silence never arrives. Use `throttleTime` with `{ leading: true }` for a button that should respond immediately and then enforce a cooldown, not wait for a pause.

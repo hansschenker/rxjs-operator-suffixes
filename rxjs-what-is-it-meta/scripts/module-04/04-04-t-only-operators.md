@@ -53,3 +53,7 @@ All four operators are T-only. The entire test is three lines. If the output is 
 - T-only = synchronous value transform, no timers, no buffers, no scheduler dependency
 - Testable with `of()` and synchronous assertions — `TestScheduler` is never needed for a T-only pipeline
 - Every bug a T-only operator produces is a value-logic bug; timing pressure cannot reveal new failure modes in T-only code
+
+## Pitfall
+
+Reaching for a time-based operator when a T-only operator is sufficient. `distinctUntilChanged` (T-only) is free of timer overhead; adding a custom `debounceTime(0)` to "flush" what distinctUntilChanged already handles is unnecessary. T-only operators are synchronous and scheduler-free — use the cheapest operator that solves the problem.

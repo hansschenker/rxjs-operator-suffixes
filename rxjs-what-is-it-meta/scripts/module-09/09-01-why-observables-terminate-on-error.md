@@ -50,3 +50,7 @@ The `SafeSubscriber` wrapper enforces the contract for you, but the right respon
 - A producer that emits after erroring is in undefined behavior territory; `SafeSubscriber` silently drops those emissions
 - Recovery is always a new Observable — `catchError` terminates the old stream and starts the replacement
 - This is not a limitation but a guarantee: error handling becomes compositional because error is always unambiguous and always final
+
+## Pitfall
+
+Adding `catchError` expecting the original stream to resume after the catch. `catchError` returns a replacement stream — the original producer is gone. If you need the stream to continue producing after a recoverable error, use `retry` (which resubscribes to the original source) or place `catchError` inside the inner Observable of a `switchMap` so the outer stream is never affected.

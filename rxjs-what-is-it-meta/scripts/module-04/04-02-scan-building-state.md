@@ -61,3 +61,7 @@ action$.next({ type: 'reset' });     // count: 0
 - `scan` = `reduce` that emits every intermediate accumulation, not only the final value
 - `actions$.pipe(scan(reducer, initialState), shareReplay(1))` is a complete reactive store in one pipeline
 - NgRx and Redux-Observable are `scan` plus a `Subject` entry point plus infrastructure — the mechanism is the same operator
+
+## Pitfall
+
+Mutating the accumulator inside `scan`. `scan((acc, val) => { acc.items.push(val); return acc; })` returns the same array reference each time — all downstream operators and subscribers see the same mutated object. Always return a new object: `scan((acc, val) => ({ ...acc, items: [...acc.items, val] }))`.

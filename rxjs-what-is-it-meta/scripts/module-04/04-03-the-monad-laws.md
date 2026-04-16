@@ -59,3 +59,7 @@ The laws are not academic. They are the invariants that make refactoring safe.
 - A monad needs: type constructor (`Observable<T>`), lift (`of`), and flatten (`mergeMap`)
 - Left identity and right identity confirm that `of` adds no behavior — it is a neutral wrapper
 - Associativity confirms that `mergeMap` chains can be restructured freely — the guarantee behind safe pipeline refactoring
+
+## Pitfall
+
+Using `mergeMap` or `switchMap` with a callback that performs a side effect rather than returning an Observable. `flatMap(x => { sideEffect(); return of(x); })` technically works but breaks the second monad law (left identity): the mapping function is no longer a pure `T → Observable<T>` morphism, making refactoring unsafe.

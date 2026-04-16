@@ -54,3 +54,7 @@ The streams are identical at the source. The operator choice is a domain decisio
 - Lossy = drop values to control rate (`throttleTime`, `debounceTime`, `auditTime`, `sampleTime`)
 - Lossless = group values to keep everything (`bufferTime`, `bufferCount`, `windowTime`)
 - Ask first: can I afford to drop values? UI responsiveness → lossy; audit, analytics, financial → lossless
+
+## Pitfall
+
+Choosing a lossless operator (buffer, window) when the consumer cannot keep up with the buffered data. An unbounded `bufferTime(1000)` on a 1000 items/second source produces 1000-item arrays every second — if processing each array takes more than 1 second, memory grows without bound. Use lossy operators when the consumer is the bottleneck.

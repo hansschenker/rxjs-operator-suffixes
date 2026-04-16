@@ -80,3 +80,7 @@ const shared$ = interval(1000).pipe(share());
 - Connectable = producer starts on explicit `.connect()`, shared with all subscribers registered before or after
 - Subject = producer already running before subscription — always hot, late subscribers miss past emissions
 - `share()` is ConnectableObservable plus automatic `connect()`/`disconnect()` via refCount — the most common way to convert cold to hot
+
+## Pitfall
+
+Using a plain `Subject` as a shared state container. `Subject` has no memory — late subscribers receive only future emissions, not the current value. Use `BehaviorSubject` when consumers need the current state immediately on subscribe, which is the case for virtually all state-sharing scenarios.

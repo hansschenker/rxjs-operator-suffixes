@@ -74,3 +74,7 @@ The component contains zero RxJS operator imports. Swapping `switchMap` to `exha
 - Adapters = components — import domain operators, never import RxJS operators directly
 - Dependencies point inward: adapters → core → infrastructure
 - Swapping RxJS implementation details touches only the core layer — components are unaffected
+
+## Pitfall
+
+Importing `switchMap` or `debounceTime` directly in a component "just for this one case". Every RxJS import in a component file breaks the hexagonal boundary — the component now has knowledge of the infrastructure layer. Extract even single-use RxJS logic into a named domain operator; the naming forces you to think about what the operation means in domain terms.

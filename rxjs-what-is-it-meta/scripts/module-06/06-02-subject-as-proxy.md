@@ -45,3 +45,7 @@ When `next('user-logged-in')` is called, Subject iterates its internal subscribe
 - Subject = Observer + Observable in one object; push values via `next()`, receive via `subscribe()`
 - Internally maintains a subscriber list and forwards every `next()` call to all subscribers synchronously
 - Always expose via `.asObservable()` — hide the push interface from anything outside the owning module
+
+## Pitfall
+
+Exposing a `Subject` directly from a service. Any caller can call `subject.next()`, bypassing the service's encapsulation and injecting values from anywhere in the application. Always expose `subject.asObservable()` to consumers; only the service that owns the Subject should call `next()`.

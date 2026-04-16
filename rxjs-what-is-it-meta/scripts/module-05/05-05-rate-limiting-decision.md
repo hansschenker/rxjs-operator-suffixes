@@ -75,3 +75,7 @@ Each line is the output of the two-question framework applied mechanically.
 - Two questions: can data be lost? when should it emit? — answer both and the operator selects itself
 - Meta-rule: "if 1,000 values arrive in 1ms, what should happen?" — the answer names the family
 - Lossless (`buffer`/`window`) when every value matters; lossy (`throttle`/`debounce`/`audit`) when rate matters more than completeness
+
+## Pitfall
+
+Stacking multiple rate-limiting operators in the same `pipe`. `debounceTime(300)` followed by `throttleTime(500)` in the same chain produces behavior that is very difficult to reason about — the throttle silently swallows outputs that debounce already filtered. One rate-limiting operator per pipe chain is the rule; choose the one that fits the requirement, not multiple partial fits.

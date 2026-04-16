@@ -74,3 +74,7 @@ The rule is simple: if calling the operation twice produces the same result as c
 - Always provide a count — unbounded `retry()` creates infinite loops on permanent failures
 - Pair exponential backoff with `timer()` in the `delay` function for production-grade resilience
 - Always follow `retry` with `catchError` as the final safety net when all attempts are exhausted
+
+## Pitfall
+
+Using `retry()` with no argument, which retries infinitely. On a permanently failing endpoint — a server that is down, a URL that does not exist — `retry()` creates an infinite loop of HTTP requests until the browser tab is closed or crashes. Always bound retries with a count: `retry(3)` or `retry({ count: 3 })`.

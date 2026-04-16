@@ -50,3 +50,7 @@ The number of leak risk sites drops from three to one. The entire pipeline is no
 - Every `subscribe()` is an impure boundary — and a potential memory leak site
 - Push `subscribe()` to the outermost edge; keep business logic inside pure pipelines
 - Effect systems (NgRx Effects, Redux-Observable) manage the single `subscribe()` boundary so application code never has to
+
+## Pitfall
+
+Calling `.subscribe()` inside a `switchMap` or `mergeMap` callback. This is a nested subscription — a hidden inner execution with no teardown logic connected to the outer subscription tree. Flatten with the appropriate operator instead: `switchMap`, `mergeMap`, `concatMap`, or `exhaustMap`.

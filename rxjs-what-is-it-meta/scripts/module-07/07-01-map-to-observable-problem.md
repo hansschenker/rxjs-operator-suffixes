@@ -48,3 +48,7 @@ The nested subscription anti-pattern — calling `subscribe()` inside `map()` �
 - `map()` applied to an async operation produces nested Observables — inner ones never fire, results render as `[object Object]`
 - Never call `subscribe()` inside `map()` — that is a nested subscription anti-pattern that leaks and bypasses the pipeline
 - The four flattening operators all solve the same problem; their only difference is the concurrency policy when a new outer value arrives while an inner Observable is still active
+
+## Pitfall
+
+Calling `.subscribe()` inside a `map` callback to "unwrap" an inner Observable. This creates a nested subscription — a hidden inner execution that has no teardown connected to the outer subscription tree. The outer subscription completes or errors independently of all inner subscriptions it created. Use a flattening operator instead.

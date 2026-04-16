@@ -49,3 +49,7 @@ The refactored version separates concerns clearly: `tap` owns side effects, `map
 - `map` must be pure and return a transformed value — side effects inside `map` are a silent correctness bug
 - `tap` declares a side effect that runs without altering the emitted value — it is the correct operator for logging, metrics, and dispatching
 - Putting side effects in `map` compiles and runs but silently breaks referential transparency, especially under `shareReplay` or multiple subscriptions
+
+## Pitfall
+
+Returning a value from a `tap` callback expecting it to change the emitted value. `tap` ignores its return value entirely — the original value passes through unchanged. Only `map` transforms the emitted value. If you need to both log and transform, use `tap` for logging followed by `map` for transformation, in separate operator slots.

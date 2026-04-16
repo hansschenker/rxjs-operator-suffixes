@@ -50,3 +50,7 @@ The Observable does not execute until subscribed. Assign, pass, and compose free
 - Observable = referentially transparent blueprint; no execution until `subscribe()` is called
 - Promise = eager; execution starts at creation, not at `.then()`
 - Assign, pass, and compose Observables freely — `subscribe()` is where transparency ends
+
+## Pitfall
+
+Storing the result of `.subscribe()` and treating it as the Observable's value. A `Subscription` is a teardown handle, not a value — it cannot be composed, passed through operators, or subscribed to again. The Observable itself is the reusable blueprint; the Subscription is a one-time execution handle.

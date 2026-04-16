@@ -66,3 +66,7 @@ user$.subscribe({
 - Combine `timeout` with `catchError` and `instanceof TimeoutError` to handle stalls distinctly from other errors
 - `finalize` runs on complete, error, and unsubscribe — it is the only unconditional cleanup hook in an Observable pipeline
 - Prefer `finalize` over `tap({ complete })` whenever cleanup is load-bearing; `tap` complete is skipped on error and unsubscribe
+
+## Pitfall
+
+Using `tap({ complete: () => hideSpinner() })` for cleanup logic. `tap.complete` only fires on graceful completion — it is silently skipped on error and on manual `unsubscribe()`. Use `finalize(() => hideSpinner())` instead: it fires on every termination path, making it the only reliable place for cleanup that must always run.

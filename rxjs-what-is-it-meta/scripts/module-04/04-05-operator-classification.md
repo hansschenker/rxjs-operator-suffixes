@@ -57,3 +57,7 @@ Wrong search results returned → look at the `map` predicate (T-only). Search f
 - Time-only = timing only, requires `TestScheduler`, timing-logic bugs only
 - T+time = both dimensions, most complex, allocates buffers and timers, both logic layers may fail
 - Wrong value? Check T-only. Wrong timing? Check time-only. Wrong temporal grouping? Check T+time.
+
+## Pitfall
+
+Treating operator classification as fixed. `distinctUntilChanged` is T-only with the default comparator but becomes T+time if given an async comparator that calls an API. An operator's classification depends on its configuration, not just its name — always check what a specific invocation does before classifying it.

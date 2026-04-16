@@ -52,3 +52,7 @@ Scenario 3 (combining many Observables) is not needed here — but if a second s
 - RxJS is a DSL for `Observable<T>` — not a utility library but a language with a complete grammar
 - Four scenarios cover every case: create (no Observable), transform (one Observable), combine (many Observables), flatten (nested Observable)
 - Operators are the grammar; once you see the language, nothing in the vocabulary feels arbitrary
+
+## Pitfall
+
+Importing `switchMap` and `debounceTime` directly in component files. In the DSL model, components speak domain language (`searchOnQuery`, `waitForTypingPause`); RxJS operators are the compiler hidden inside domain operators. Direct RxJS imports in components break the abstraction boundary and make components unreadable to non-RxJS developers.

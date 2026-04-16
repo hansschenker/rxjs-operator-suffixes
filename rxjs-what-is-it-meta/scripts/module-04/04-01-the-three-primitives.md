@@ -48,3 +48,7 @@ The entire behavior — suppress consecutive duplicates — is expressed as a `f
 - `map` = 1:1 transform; `filter` = 1:0-or-1 pass/drop; `flatMap` = 1:many with inner Observables
 - Every value operator in RxJS is a composition or specialization of these three primitives
 - Reduce unfamiliar operators to their primitive form to predict cardinality, cost, and behavior before reading docs
+
+## Pitfall
+
+Using `reduce` instead of `scan` when intermediate values matter. `reduce` waits for the source to complete before emitting the final accumulation — on an infinite stream, it never emits at all. Use `scan` any time you need running state; reserve `reduce` for finite sources where only the final total is needed.

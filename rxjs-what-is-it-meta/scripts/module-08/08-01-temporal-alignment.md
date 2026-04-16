@@ -57,3 +57,7 @@ The code shape follows directly from the answers to the two questions — no mem
 - Two questions — when to emit? which values? — answer both and the operator is determined
 - `combineLatest` = any source triggers, latest from all; `withLatestFrom` = primary triggers only
 - Most common mistake: using `combineLatest` when `withLatestFrom` is correct, causing unintended secondary-triggered output
+
+## Pitfall
+
+Using `combineLatest` when `withLatestFrom` was the correct choice. If a secondary source emits frequently, `combineLatest` fires output on every secondary emission — flooding the pipeline with updates triggered by context changes rather than primary actions. Ask: should secondary emissions trigger output? If no, use `withLatestFrom`.

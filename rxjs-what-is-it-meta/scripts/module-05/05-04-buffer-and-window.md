@@ -52,3 +52,7 @@ The `filter` guard prevents empty writes during quiet periods. The `bufferTime` 
 - `buffer` emits arrays; `window` emits inner Observables — both are lossless, every input value is preserved
 - `bufferTime` for time-batching, `bufferCount` for size-batching, `bufferToggle` for dynamic windows
 - Prefer `buffer` over `window` unless you need to apply operators to each group before collecting; both are correct choices when data loss is unacceptable
+
+## Pitfall
+
+Subscribing to the outer `windowTime` Observable but forgetting to subscribe to each inner Observable it emits. `windowTime` emits `Observable<T>` values — each window is itself an Observable. If you only subscribe to the outer stream and ignore the inner Observables, you receive empty window containers and wonder why no values appear.

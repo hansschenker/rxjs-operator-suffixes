@@ -53,3 +53,7 @@ The value was correct (Layer 1 was fine). The timing was correct (Layer 2 was fi
 - Layer 3 (Sharing): wrong subscriber behaviour — check `share`, `shareReplay` config, `Subject` variant
 - Layer 4 (Flattening): wrong concurrency — check the flattening operator: `switchMap` vs `exhaustMap` vs `concatMap`
 - Use as a diagnostic compass, not a filing system — identify the layer, and the fix narrows to a small set of operators
+
+## Pitfall
+
+Diagnosing a Layer 3 (Sharing) problem as a Layer 1 (Values) bug. `shareReplay` serving a stale cached value looks exactly like a wrong value from a transformation error — the value is wrong, but the map/filter operators are correct. Checking Layer 3 first (is this shared? is the cache stale?) would have found the bug immediately. Apply the 4-Layer diagnostic in order.

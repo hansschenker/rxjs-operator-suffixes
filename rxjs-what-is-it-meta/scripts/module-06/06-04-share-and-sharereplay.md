@@ -49,3 +49,7 @@ function renderSidebar(_cfg: Config): void { /* ... */ }
 - `share()` = live broadcast via a Subject; no replay; disconnects at refCount 0; use for event streams
 - `shareReplay({ bufferSize: 1, refCount: true })` = replay via ReplaySubject; replays last value; disconnects safely
 - Never use `shareReplay()` without an explicit options object — the default `refCount: false` keeps the source subscribed forever
+
+## Pitfall
+
+Using `shareReplay(1)` (shorthand form) without `refCount: true`. The shorthand is equivalent to `shareReplay({ bufferSize: 1, refCount: false })` in RxJS 6, which keeps the internal subscription alive after all consumers unsubscribe. New subscribers then receive stale cached data instead of triggering a fresh execution. Always use `shareReplay({ bufferSize: 1, refCount: true })`.

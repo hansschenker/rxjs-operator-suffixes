@@ -72,3 +72,7 @@ The test runs in under 1ms. The 300ms debounce, the `switchMap` flattening, and 
 - `hot()` for event sources already running at time zero; `cold()` for per-subscription sequences like HTTP
 - Domain facades are the natural marble test unit — inject the HTTP layer as a `cold()` mock
 - `expectObservable` asserts the entire temporal structure of the output in a single readable string
+
+## Pitfall
+
+Using `setTimeout`, `Date.now()`, or `setInterval` inside a `TestScheduler.run()` block. Real timers run in wall-clock time, not virtual time — they never fire inside the virtual scheduler's synchronous execution. All time in marble tests must come from RxJS schedulers (the ones `TestScheduler` replaces). If your operator uses a non-RxJS timer, marble testing cannot control it.

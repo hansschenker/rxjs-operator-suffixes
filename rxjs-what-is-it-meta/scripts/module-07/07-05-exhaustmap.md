@@ -46,3 +46,7 @@ Without `timeout`, a hung login request would leave `exhaustMap` permanently bus
 - `exhaustMap` drops all outer values while an inner Observable is active — double-execution is structurally impossible without any flag or DOM manipulation
 - Use for submit buttons, login, payment triggers, and any action that must not run twice concurrently
 - Inner Observables must be guaranteed to terminate — use `timeout` as a safety net and return `EMPTY` from `catchError` to reset the operator to its receptive state
+
+## Pitfall
+
+Using `exhaustMap` for a typeahead search. While the first search request is in-flight, every subsequent keystroke is silently dropped. The results panel appears frozen until the first search completes. Use `switchMap` for search — cancel-on-new, not ignore-while-busy.

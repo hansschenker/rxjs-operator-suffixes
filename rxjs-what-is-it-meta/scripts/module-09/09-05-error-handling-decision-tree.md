@@ -64,3 +64,7 @@ The inner `retry` handles transient failures per query. The inner `catchError` h
 - Always use inner `catchError` inside flattening operators — unhandled inner errors terminate the outer stream
 - When in doubt, rethrow — surfacing an error is always safer than silently swallowing it
 - Combine all three strategies in one pipeline: `retry` → `catchError(recover)` → outer `catchError(rethrow)`
+
+## Pitfall
+
+Placing `catchError` before `retry` in the pipe chain. `catchError` intercepts the error first, returning a fallback Observable — `retry` never sees the error and never retries. The correct order is always `retry` first, `catchError` last: `pipe(retry({ count: 3 }), catchError(() => of(fallback)))`.

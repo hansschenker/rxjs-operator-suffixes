@@ -75,3 +75,7 @@ sub.unsubscribe();
 - `pipe()` builds the dependency graph (static, describes data transformation, readable from source)
 - `subscribe()` builds the subscription graph (dynamic, describes lifecycle ownership, invisible without tooling)
 - Memory leaks are subscription graph nodes that are never reached by a call to `unsubscribe()` — always hold a reference to the root and call it when the consumer is destroyed
+
+## Pitfall
+
+Subscribing without storing the returned `Subscription` object. Without a reference to the subscription, `unsubscribe()` is impossible — the subscription tree stays alive forever. Always store the subscription: `const sub = obs$.subscribe(...)` and call `sub.unsubscribe()` in the component's destroy lifecycle.

@@ -49,3 +49,7 @@ The values `0`, `1`, `2` are the spatial content. The timestamps `1713260001000`
 - Observable = `[(timestamp, value)]` — time is always a dimension, not just a delivery mechanism
 - Arrays are spatial (position-indexed); Observables are temporal (moment-indexed), which means no random access and no known length
 - `timestamp()` makes the implicit time dimension explicit; time operators act on this dimension while value operators ignore it
+
+## Pitfall
+
+Treating two streams that emit the same values as equivalent because the values match. `of(1, 2, 3)` emits all three values synchronously at t=0; `interval(1000).pipe(take(3), map(i => i + 1))` emits them at t=1000, t=2000, t=3000. The value sequences are identical; the temporal sequences are completely different. Operators like `zip` and `combineLatest` produce different results for each.

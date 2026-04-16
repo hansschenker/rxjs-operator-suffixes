@@ -74,3 +74,7 @@ Every pipeline that uses `searchOnQuery` is now instrumented. Changing the telem
 - All injected behaviors are side effects placed in `tap`, `catchError`, and `finalize` — never in `map`
 - This is AOP for streams: write the cross-cutting concern once, apply it to all operators transparently
 - Wrapped operators have identical signatures — all existing tests pass without modification
+
+## Pitfall
+
+Implementing telemetry inline with `tap` inside each operator rather than as a `withTelemetry` wrapper. Inline `tap` telemetry cannot be toggled (you cannot disable logging in tests without modifying each operator), cannot be reused across operators, and cannot be tested in isolation. The wrapper pattern is not premature abstraction — it is the minimum viable separation for cross-cutting concerns.

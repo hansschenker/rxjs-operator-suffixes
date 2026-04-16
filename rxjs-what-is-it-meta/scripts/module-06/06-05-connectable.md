@@ -55,3 +55,7 @@ The key moment is `.connect()`. Until that line runs, the source is silent even 
 - `connectable()` = manual producer lifecycle; `.connect()` starts the source independent of subscriber count
 - `share()` = `connectable()` + automatic refCount; connects on first subscriber, disconnects on last
 - Use `connectable()` when you need to start the producer before subscribers arrive, or hold it alive after they leave
+
+## Pitfall
+
+Calling `connect()` before any subscribers have attached. Emissions that occur between `connect()` and the first `subscribe()` are lost permanently — the connectable Observable has no buffer by default. Either use `shareReplay` if late subscribers need buffered values, or attach all subscribers before calling `connect()`.

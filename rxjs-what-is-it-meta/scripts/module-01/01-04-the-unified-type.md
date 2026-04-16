@@ -74,3 +74,7 @@ Same two operators, four completely different source types. One vocabulary.
 - The 2×2 grid (sync/async × single/multiple) shows Observable as the bottom-right cell — the one type that covers all quadrants
 - `from()` converts `Array`, `Promise`, or `Iterable` to Observable; `of()` wraps a single value; `fromEvent()` converts DOM events — all produce the same `Observable<T>`
 - One type plus one operator vocabulary means no more switching between async APIs mid-codebase
+
+## Pitfall
+
+Wrapping a Promise in `new Observable(...)` instead of using `from(promise)`. The unified type already handles Promises, Arrays, and iterables via `from`. Manual wrapping is error-prone (forgetting to call `complete()`) and unnecessary — it is the wheel RxJS already invented.

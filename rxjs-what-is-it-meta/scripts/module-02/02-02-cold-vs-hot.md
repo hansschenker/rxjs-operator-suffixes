@@ -58,3 +58,7 @@ Subscriber B on the cold stream restarts from zero — its own private timer. Su
 - Cold = producer created inside `subscribe()`, private per subscriber, always starts from the beginning
 - Hot = producer exists independently, shared by all subscribers, late arrivals miss past values
 - `share()` converts cold to hot; `shareReplay(n)` converts cold to hot and replays the last `n` values to late subscribers
+
+## Pitfall
+
+Using a cold Observable for a WebSocket or SSE connection in a service. Every component that subscribes opens its own connection. The service should create the connection once (hot producer) and expose it via `share()` or `shareReplay()` — not expose the cold Observable directly.

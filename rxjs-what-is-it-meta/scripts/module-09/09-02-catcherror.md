@@ -74,3 +74,7 @@ The inner placement is the standard pattern for HTTP in reactive UIs. Always cat
 - Four strategies: fallback value (`of(default)`), swallow (`EMPTY`), rethrow (`throwError`), resubscribe (`caught$`)
 - Always use inner `catchError` inside `switchMap`/`mergeMap` to isolate per-inner-Observable errors
 - Swallow silently only when downstream genuinely handles the absence of data — hiding errors is rarely the right default
+
+## Pitfall
+
+Placing `catchError` outside a `switchMap` instead of inside the inner Observable. An error inside `switchMap`'s inner Observable propagates to the outer stream, terminating the entire pipeline — including the typeahead that was listening for more keystrokes. Always wrap inner Observables: `switchMap(q => search(q).pipe(catchError(() => of([]))))`.

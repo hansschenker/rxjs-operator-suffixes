@@ -41,3 +41,7 @@ With `mergeMap` here, a slow first save could arrive after a fast second save, s
 - `concatMap` enforces serial execution — one inner Observable at a time, strictly ordered
 - Output order is guaranteed to match input order, making it the correct choice for writes and ordered mutations
 - Slow inner Observables silently build an unbounded queue — measure emission rate against inner latency before using `concatMap` on a high-frequency source
+
+## Pitfall
+
+Using `concatMap` on a source that emits much faster than the inner Observables complete. Each unprocessed emission joins an unbounded internal queue. A source emitting 100 items where each inner Observable takes 1 second to complete will take 100 seconds to drain — and hold all 100 items in memory throughout. Use `switchMap` or `exhaustMap` if old items should be discarded.
