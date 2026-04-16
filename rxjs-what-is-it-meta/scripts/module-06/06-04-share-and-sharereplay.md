@@ -52,4 +52,4 @@ function renderSidebar(_cfg: Config): void { /* ... */ }
 
 ## Pitfall
 
-Using `shareReplay(1)` (shorthand form) without `refCount: true`. The shorthand is equivalent to `shareReplay({ bufferSize: 1, refCount: false })` in RxJS 6, which keeps the internal subscription alive after all consumers unsubscribe. New subscribers then receive stale cached data instead of triggering a fresh execution. Always use `shareReplay({ bufferSize: 1, refCount: true })`.
+Using `shareReplay(1)` (shorthand form) without `refCount: true`. The shorthand is equivalent to `shareReplay({ bufferSize: 1, refCount: false })`, which keeps the internal subscription alive after all consumers unsubscribe. New subscribers then receive stale cached data instead of triggering a fresh execution. Always use `shareReplay({ bufferSize: 1, refCount: true })`.

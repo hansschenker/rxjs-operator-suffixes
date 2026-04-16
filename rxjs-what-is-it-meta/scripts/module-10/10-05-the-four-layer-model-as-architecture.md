@@ -56,4 +56,4 @@ The value was correct (Layer 1 was fine). The timing was correct (Layer 2 was fi
 
 ## Pitfall
 
-Diagnosing a Layer 3 (Sharing) problem as a Layer 1 (Values) bug. `shareReplay` serving a stale cached value looks exactly like a wrong value from a transformation error — the value is wrong, but the map/filter operators are correct. Checking Layer 3 first (is this shared? is the cache stale?) would have found the bug immediately. Apply the 4-Layer diagnostic in order.
+Diagnosing a Layer 3 (Sharing) problem as a Layer 1 (Values) bug. `shareReplay` serving a stale cached value looks exactly like a wrong value from a transformation error — the value is wrong, but the map/filter operators are correct. Checking Layer 3 first — is the data shared, is the cache stale — finds the bug immediately and avoids hunting through value-transformation operators for a problem that was never there.
