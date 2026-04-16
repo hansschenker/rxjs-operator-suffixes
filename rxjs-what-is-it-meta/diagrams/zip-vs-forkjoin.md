@@ -29,10 +29,11 @@ output$:  ----------------[profile, perms, flags]--|
 - `forkJoin`: waiting for multiple independent async operations to all finish before proceeding
 
 ```typescript
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ajax } from 'rxjs/ajax';
-import { of } from 'rxjs';
+// Note: forkJoin also accepts an object { key: source$ } — the result is then typed
+// as { key: T } instead of [T, T, T]. The object form is preferred in practice.
 
 interface UserProfile { id: number; name: string; }
 interface Permissions { canEdit: boolean; }

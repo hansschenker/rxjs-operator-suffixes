@@ -7,18 +7,17 @@ c$:      ----------6----------|
 
 combineLatest([a$, b$, c$]):
 
-output$: ----------[3,4,6]--[5,4,6]--|
+output$: ----------[1,4,6][3,4,6]-----[5,4,6]--|
 ```
 Output does not start until all three sources have emitted at least once. After that, every new emission from any source triggers a new output using the latest value from all sources.
 
-**Read it:** a$ emits 1, then b$ emits 2 — but c$ has not emitted yet, so no output fires. c$ emits 6 (using latest a$=3, b$=4) — now all three have a value and the first output fires: [3,4,6]. Then a$ emits 5 → new output [5,4,6].
+**Read it:** a$ emits 1, then b$ emits 4 (2 was already superseded), but c$ has not emitted yet — no output fires. c$ emits 6: all three have a value; the first output fires using the *latest* from each source: [1,4,6]. One frame later a$ emits 3 → [3,4,6]. Then a$ emits 5 → [5,4,6]. Note that b$=4 is the latest `b` value throughout — b$ emitting 2 was superseded before the first output.
 
 **Use when:** a derived value depends on multiple independently-updating sources — a total price that combines quantity, unit cost, and a discount rate that each update separately.
 
 ```typescript
-import { combineLatest } from 'rxjs';
+import { combineLatest, BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { BehaviorSubject } from 'rxjs';
 
 const quantity$ = new BehaviorSubject<number>(1);
 const unitPrice$ = new BehaviorSubject<number>(10);

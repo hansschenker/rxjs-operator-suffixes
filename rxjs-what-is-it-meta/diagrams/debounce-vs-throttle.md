@@ -1,20 +1,24 @@
 # debounce vs throttle — same input, different output
 
 ```ascii
-input$:    --a-b-c-----d--e-f-g-----h--|
+input$:    --a-b-c-----------d--|
+           (burst of a, b, c then a long pause then d)
 
-debounceTime(3):
-output$:   --------c-----------g-----h--|
-           (emits after 3 units of silence)
+── debounceTime(5) ───────────────────────────────────────────
+output$:   -----------c-------d--|
+           (fires 5 units after the last value in the burst)
+           (d fires on source complete — pending debounced value emits)
 
-throttleTime(3):
-output$:   --a---------d----------h--|
-           (emits leading value, blocks for 3 units)
+── throttleTime(5) ───────────────────────────────────────────
+output$:   --a-----------d--|
+           (fires on leading edge, blocks for 5 units)
+           (b and c land inside the block window and are suppressed)
+           (d arrives after the window closes — fires as the next leading edge)
 ```
 
 **Read it:**
-- `debounce` waits for a pause. If values keep arriving, nothing emits. The emission fires only after the input goes silent for the specified duration. c emits because there is a gap after it; a and b are suppressed.
-- `throttle` emits the first value immediately, then blocks all subsequent values for the duration. a emits (leading edge); b and c are suppressed during the block window. d emits as the next leading edge.
+- `debounce` waits for silence. While a, b, and c keep arriving, the internal timer resets on each one. The timer only elapses after c — 5 units of silence pass before d arrives, so c fires. d fires immediately on source completion because no further values reset the timer.
+- `throttle` fires the first value (a) immediately and then blocks all values for 5 units. b and c arrive inside the block window and are silently discarded. Once the window closes, d is the next value and fires as a new leading edge.
 
 **Use when:**
 - `debounceTime`: waiting for the user to stop typing (search, autocomplete, form validation)

@@ -29,7 +29,12 @@ import { shareReplay } from 'rxjs/operators';
 interface UserProfile { id: number; name: string; role: string; }
 
 // HTTP request made once; all subscribers get the same response;
-// late subscribers get the cached value immediately
+// late subscribers get the cached value immediately.
+//
+// refCount: true (recommended) — source is reset when all subscribers disconnect.
+// Late subscribers AFTER the source completes will re-execute the source, not get
+// the cached replay. For post-completion replay use shareReplay(1) (refCount: false),
+// but be aware it keeps the source alive indefinitely (memory leak risk).
 const profile$ = ajax.getJSON<UserProfile>('/api/me').pipe(
 	shareReplay({ bufferSize: 1, refCount: true }),
 );

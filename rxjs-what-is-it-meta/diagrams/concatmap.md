@@ -19,7 +19,7 @@ B and C queue; each waits for its predecessor to complete before subscribing.
 ```typescript
 import { Subject } from 'rxjs';
 import { concatMap } from 'rxjs/operators';
-import { Observable, timer } from 'rxjs';
+import { Observable } from 'rxjs';
 
 interface AnimStep { element: string; duration: number; }
 

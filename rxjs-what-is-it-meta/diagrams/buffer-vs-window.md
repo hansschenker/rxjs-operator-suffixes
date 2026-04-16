@@ -5,8 +5,8 @@ source$:   --1--2--3--4--5--6--7--8--|
 boundary$: --------X-----------X-----|
 
 ── buffer(boundary$) ────────────────────────────────────────
-output$:   --------[1,2,3]-----[4,5,6,7]--|
-           (emits T[] arrays)
+output$:   --------[1,2,3]-----[4,5,6,7]--[8]--|
+           (emits T[] arrays; trailing values collected into a final array on source complete)
 
 ── window(boundary$) ────────────────────────────────────────
 output$:   --------W1----------W2------W3--|

@@ -9,9 +9,9 @@ request$(B):              (dropped — A still running)
 request$(C):              (dropped — A still running)
 request$(D):                       ----d1--d2--|
 
-output$:   ----a1--a2--X-----------d1--d2--|
+output$:   ----a1--a2--------------d1--d2--|
+           (B and C are silently dropped — no emission, no error)
 ```
-X = B and C arrive while A is running and are silently dropped
 
 **Read it:** While `request$(A)` is still in progress, clicks B and C are ignored entirely — no new inner subscription is created, no error is thrown. The next inner subscription starts only after the current one completes. D fires after A completes, so it is accepted.
 
