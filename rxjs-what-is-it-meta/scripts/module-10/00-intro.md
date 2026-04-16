@@ -14,7 +14,7 @@ From Modules 1–9: the complete RxJS operator vocabulary, all four layers, erro
 - **10.2** Hexagonal architecture — isolating RxJS behind domain interfaces
 - **10.3** withTelemetry — adding cross-cutting concerns via AOP without modifying operator logic
 - **10.4** TestScheduler and marble diagrams — making time-based tests deterministic
-- **10.5** The 4-Layer Model as architecture — using the layers as a diagnostic compass
+- **10.5** The 4-Layer Model as a complete architecture — using the layers as a diagnostic compass
 
 ## Why It Matters
 

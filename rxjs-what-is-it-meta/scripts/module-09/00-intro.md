@@ -14,7 +14,7 @@ From Module 2: the Observable contract — five phases, one Error or Complete, t
 - **9.2** catchError — recovering from errors by returning a replacement Observable
 - **9.3** retry — resubscribing from scratch, the resilience ladder
 - **9.4** timeout and finalize — detecting frozen streams and guaranteeing cleanup
-- **9.5** The three-strategy decision tree — recover, retry, or rethrow
+- **9.5** The error handling decision tree — recover, retry, or rethrow
 
 ## Why It Matters
 

@@ -6,7 +6,7 @@ title: Module 7 — Layer 4: Flattening
 
 ## What You Already Know
 
-From Module 4: `flatMap` is one of the three primitives. From Modules 1–6: all three prior layers. You know that subscribing to an Observable<Observable<T>> gives you a nested structure, not the inner values. This module resolves that.
+From Module 4: `flatMap` is one of the three primitives. From Modules 1–6: the Observable contract, functional purity, and the three completed layers — Values (Layer 1), Time (Layer 2), and Sharing (Layer 3). You know that subscribing to an Observable<Observable<T>> gives you a nested structure, not the inner values. This module resolves that.
 
 ## What This Module Covers
 
