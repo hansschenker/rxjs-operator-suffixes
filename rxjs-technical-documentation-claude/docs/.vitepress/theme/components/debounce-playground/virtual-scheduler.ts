@@ -1,10 +1,5 @@
+import { VirtualTimeScheduler } from 'rxjs'
 import type { SchedulerAction, SchedulerLike, Subscription } from 'rxjs'
-
-interface ScheduledItem {
-	firesAt: number
-	action: () => void
-	cancelled: boolean
-}
 
 export interface VirtualScheduler extends SchedulerLike {
 	advanceTo(time: number): void
@@ -12,57 +7,41 @@ export interface VirtualScheduler extends SchedulerLike {
 }
 
 export function createVirtualScheduler(): VirtualScheduler {
-	let currentTime = 0
-	let queue: ScheduledItem[] = []
-
-	const flushDue = (): void => {
-		queue.sort((a: ScheduledItem, b: ScheduledItem): number => a.firesAt - b.firesAt)
-		while (queue.length > 0 && queue[0].firesAt <= currentTime) {
-			const item = queue.shift()!
-			if (!item.cancelled) item.action()
-		}
-	}
+	let inner = new VirtualTimeScheduler(undefined, Number.POSITIVE_INFINITY)
 
 	return {
 		now(): number {
-			return currentTime
+			return inner.frame
 		},
+
 		schedule<T>(
 			work: (this: SchedulerAction<T>, state?: T) => void,
 			delay: number = 0,
-			_state?: T
+			state?: T
 		): Subscription {
-			const item: ScheduledItem = {
-				firesAt: currentTime + delay,
-				action: (): void => {
-					// We don't use the SchedulerAction machinery here — just invoke work.
-					;(work as (state?: T) => void)(undefined)
-				},
-				cancelled: false,
-			}
-			queue.push(item)
-			const sub: Subscription = {
-				closed: false,
-				unsubscribe(): void {
-					item.cancelled = true
-					sub.closed = true
-				},
-				add(): void {},
-				remove(): void {},
-			} as unknown as Subscription
-			return sub
+			return inner.schedule(work, delay, state)
 		},
+
 		advanceTo(time: number): void {
-			if (time < currentTime) {
-				// Going backwards means a reset; caller should call reset() instead.
-				return
+			if (time < inner.frame) return
+
+			// Set maxFrames so flush() won't overshoot past `time`.
+			inner.maxFrames = time
+
+			// Flush executes actions whose absolute delay <= maxFrames and advances
+			// inner.frame to each executed action's delay. If no actions are due,
+			// flush() leaves inner.frame unchanged — so we set it directly afterward
+			// to ensure now() always reflects the requested virtual time.
+			inner.flush()
+
+			// Guarantee now() == time even when no actions fired in this window.
+			if (inner.frame < time) {
+				inner.frame = time
 			}
-			currentTime = time
-			flushDue()
 		},
+
 		reset(): void {
-			currentTime = 0
-			queue = []
+			inner = new VirtualTimeScheduler(undefined, Number.POSITIVE_INFINITY)
 		},
 	}
 }
