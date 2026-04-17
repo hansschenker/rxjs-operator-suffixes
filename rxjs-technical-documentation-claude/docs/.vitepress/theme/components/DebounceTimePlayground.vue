@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { Subject, debounceTime, type Subscription } from 'rxjs'
 import { PRESETS, DEFAULT_PRESET_INDEX } from './debounce-playground/presets'
 import { relabelMarbles, computeGhost } from './debounce-playground/helpers'
+import { createVirtualScheduler, type VirtualScheduler } from './debounce-playground/virtual-scheduler'
 import type { Preset, SourceMarble, OutputMarble, GhostMarble } from './debounce-playground/types'
 
 const TIMELINE_DURATION_MS = 3000
@@ -20,6 +22,70 @@ const ghost = computed((): GhostMarble | null =>
 function clearPlaybackState(): void {
 	currentTime.value = 0
 	output.value = []
+}
+
+const PLAYBACK_DURATION_MS = 6000
+const statusMessage = ref<string>('idle — waiting for input')
+
+let scheduler: VirtualScheduler | null = null
+let pipelineSubject: Subject<SourceMarble> | null = null
+let pipelineSubscription: Subscription | null = null
+let nextSourceIdx = 0
+let playStartWall = 0
+let animationFrameId: number | null = null
+
+function buildPipeline(): void {
+	scheduler?.reset()
+	pipelineSubscription?.unsubscribe()
+	pipelineSubject?.complete()
+
+	scheduler = createVirtualScheduler()
+	pipelineSubject = new Subject<SourceMarble>()
+	pipelineSubscription = pipelineSubject
+		.pipe(debounceTime(debounceMs.value, scheduler))
+		.subscribe({
+			next: (marble: SourceMarble): void => {
+				output.value.push({
+					id: crypto.randomUUID(),
+					sourceLabel: marble.label,
+					time: scheduler!.now(),
+				})
+				statusMessage.value = `emitted '${marble.label}' at t=${Math.round(scheduler!.now())}ms`
+			},
+		})
+	nextSourceIdx = 0
+}
+
+function tick(): void {
+	if (!isPlaying.value || !scheduler || !pipelineSubject) return
+	const wallElapsed = performance.now() - playStartWall
+	const virtualTime = Math.min(
+		TIMELINE_DURATION_MS,
+		wallElapsed * (TIMELINE_DURATION_MS / PLAYBACK_DURATION_MS)
+	)
+	currentTime.value = virtualTime
+	scheduler.advanceTo(virtualTime)
+
+	while (nextSourceIdx < source.value.length && source.value[nextSourceIdx].time <= virtualTime) {
+		pipelineSubject.next(source.value[nextSourceIdx])
+		nextSourceIdx++
+	}
+
+	if (virtualTime >= TIMELINE_DURATION_MS) {
+		pipelineSubject.complete()
+		scheduler.advanceTo(TIMELINE_DURATION_MS)
+		isPlaying.value = false
+		return
+	}
+	animationFrameId = requestAnimationFrame(tick)
+}
+
+function startPlayback(): void {
+	buildPipeline()
+	clearPlaybackState()
+	playStartWall = performance.now()
+	isPlaying.value = true
+	animationFrameId = requestAnimationFrame(tick)
 }
 
 function loadPreset(index: number): void {
@@ -109,13 +175,32 @@ function onMarblePointerUp(): void {
 }
 
 function onPlayPause(): void {
-	isPlaying.value = !isPlaying.value
+	if (isPlaying.value) {
+		isPlaying.value = false
+		if (animationFrameId !== null) cancelAnimationFrame(animationFrameId)
+	} else {
+		startPlayback()
+	}
 }
 
 function onReset(): void {
 	isPlaying.value = false
+	if (animationFrameId !== null) cancelAnimationFrame(animationFrameId)
+	scheduler?.reset()
+	pipelineSubscription?.unsubscribe()
+	pipelineSubject?.complete()
+	scheduler = null
+	pipelineSubject = null
+	pipelineSubscription = null
 	clearPlaybackState()
+	statusMessage.value = 'idle — waiting for input'
 }
+
+onBeforeUnmount((): void => {
+	if (animationFrameId !== null) cancelAnimationFrame(animationFrameId)
+	pipelineSubscription?.unsubscribe()
+	pipelineSubject?.complete()
+})
 </script>
 
 <template>
@@ -172,6 +257,12 @@ function onReset(): void {
 				>
 					<span class="marble-label" data-testid="source-marble-label">{{ m.label }}</span>
 				</div>
+				<div
+					v-if="isPlaying || currentTime > 0"
+					class="time-cursor"
+					:style="{ left: `${marbleXPercent(currentTime)}%` }"
+					data-testid="time-cursor"
+				/>
 			</div>
 		</div>
 		<div class="lane output-lane" data-testid="output-lane">
@@ -195,7 +286,16 @@ function onReset(): void {
 				>
 					<span class="marble-label">{{ ghost.sourceLabel }}</span>
 				</div>
+				<div
+					v-if="isPlaying || currentTime > 0"
+					class="time-cursor"
+					:style="{ left: `${marbleXPercent(currentTime)}%` }"
+					data-testid="time-cursor"
+				/>
 			</div>
+		</div>
+		<div class="status-caption" data-testid="status-caption">
+			{{ statusMessage }}
 		</div>
 	</div>
 </template>
@@ -295,5 +395,20 @@ button:hover {
 	border: 2px dashed var(--vp-c-tip-1);
 	color: var(--vp-c-tip-1);
 	opacity: 0.6;
+}
+.time-cursor {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 1px;
+	background: var(--vp-c-text-2);
+	pointer-events: none;
+}
+.status-caption {
+	font-size: 0.85rem;
+	color: var(--vp-c-text-2);
+	font-family: var(--vp-font-family-mono);
+	margin-top: 0.5rem;
+	min-height: 1.2em;
 }
 </style>
