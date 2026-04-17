@@ -19,13 +19,31 @@ const ghost = computed((): GhostMarble | null =>
 	computeGhost(source.value, currentTime.value, debounceMs.value, output.value)
 )
 
+const statusMessage = computed((): string => {
+	// Just-emitted flash (300ms virtual window)
+	if (lastEmittedLabel.value !== null && currentTime.value - justEmittedFlash.value < 300) {
+		return `emitted '${lastEmittedLabel.value}' at t=${Math.round(justEmittedFlash.value)}ms`
+	}
+	// Active silence timer
+	if (ghost.value) {
+		const remaining = Math.max(0, ghost.value.firesAt - currentTime.value)
+		return `silence active · ${Math.round(remaining)}ms until next emit${
+			lastEmittedLabel.value ? ` · last emit: '${lastEmittedLabel.value}'` : ''
+		}`
+	}
+	return 'idle — waiting for input'
+})
+
 function clearPlaybackState(): void {
 	currentTime.value = 0
 	output.value = []
+	lastEmittedLabel.value = null
+	justEmittedFlash.value = 0
 }
 
 const PLAYBACK_DURATION_MS = 6000
-const statusMessage = ref<string>('idle — waiting for input')
+const lastEmittedLabel = ref<string | null>(null)
+const justEmittedFlash = ref<number>(0)
 
 let scheduler: VirtualScheduler | null = null
 let pipelineSubject: Subject<SourceMarble> | null = null
@@ -50,7 +68,8 @@ function buildPipeline(): void {
 					sourceLabel: marble.label,
 					time: scheduler!.now(),
 				})
-				statusMessage.value = `emitted '${marble.label}' at t=${Math.round(scheduler!.now())}ms`
+				lastEmittedLabel.value = marble.label
+				justEmittedFlash.value = scheduler!.now()
 			},
 		})
 	nextSourceIdx = 0
@@ -120,7 +139,8 @@ watch(debounceMs, (): void => {
 					sourceLabel: marble.label,
 					time: scheduler!.now(),
 				})
-				statusMessage.value = `emitted '${marble.label}' at t=${Math.round(scheduler!.now())}ms`
+				lastEmittedLabel.value = marble.label
+				justEmittedFlash.value = scheduler!.now()
 			},
 		})
 	scheduler.advanceTo(resumeTime)
@@ -222,7 +242,6 @@ function onReset(): void {
 	pipelineSubject = null
 	pipelineSubscription = null
 	clearPlaybackState()
-	statusMessage.value = 'idle — waiting for input'
 }
 
 onBeforeUnmount((): void => {
