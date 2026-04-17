@@ -31,6 +31,39 @@ function marbleXPercent(time: number): number {
 	return (time / TIMELINE_DURATION_MS) * 100
 }
 
+const MAX_SOURCE_MARBLES = 26
+
+function onLaneClick(event: MouseEvent): void {
+	// Only add if the click was on the track itself, not on a marble
+	const target = event.target as HTMLElement
+	if (target.classList.contains('marble')) return
+
+	// I1 guard: refuse to add beyond the max
+	if (source.value.length >= MAX_SOURCE_MARBLES) return
+
+	const track = event.currentTarget as HTMLElement
+	const rect = track.getBoundingClientRect()
+	const xRatio = (event.clientX - rect.left) / rect.width
+	const time = Math.round(xRatio * TIMELINE_DURATION_MS)
+	if (time < 0 || time > TIMELINE_DURATION_MS) return
+
+	const nextLabel = String.fromCharCode(97 + source.value.length)
+	source.value = relabelMarbles([
+		...source.value,
+		{ id: crypto.randomUUID(), label: nextLabel, time },
+	])
+	isPlaying.value = false
+}
+
+function onMarbleClick(event: MouseEvent, marbleId: string): void {
+	if (event.shiftKey || event.button === 2) {
+		event.preventDefault()
+		event.stopPropagation()
+		source.value = relabelMarbles(source.value.filter((m: SourceMarble): boolean => m.id !== marbleId))
+		isPlaying.value = false
+	}
+}
+
 function onPlayPause(): void {
 	isPlaying.value = !isPlaying.value
 }
@@ -73,13 +106,19 @@ function onReset(): void {
 		</div>
 		<div class="lane source-lane" data-testid="source-lane">
 			<div class="lane-label">source$</div>
-			<div class="lane-track">
+			<div
+				class="lane-track"
+				@click="onLaneClick"
+				@contextmenu.prevent
+			>
 				<div
 					v-for="m in source"
 					:key="m.id"
 					class="marble source-marble"
 					:style="{ left: `${marbleXPercent(m.time)}%` }"
 					data-testid="source-marble"
+					@click.stop="onMarbleClick($event, m.id)"
+					@contextmenu.prevent="onMarbleClick($event, m.id)"
 				>
 					<span class="marble-label" data-testid="source-marble-label">{{ m.label }}</span>
 				</div>
