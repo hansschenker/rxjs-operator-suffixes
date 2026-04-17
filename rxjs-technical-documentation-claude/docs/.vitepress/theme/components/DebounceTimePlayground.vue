@@ -103,6 +103,35 @@ function loadPreset(index: number): void {
 
 watch(presetIndex, (i: number): void => loadPreset(i), { immediate: true })
 
+watch(debounceMs, (): void => {
+	if (!isPlaying.value) return
+	// Rebuild the pipeline with the new debounce value, preserving current virtual time.
+	const resumeTime = currentTime.value
+	pipelineSubscription?.unsubscribe()
+	pipelineSubject?.complete()
+	scheduler = createVirtualScheduler()
+	pipelineSubject = new Subject<SourceMarble>()
+	pipelineSubscription = pipelineSubject
+		.pipe(debounceTime(debounceMs.value, scheduler))
+		.subscribe({
+			next: (marble: SourceMarble): void => {
+				output.value.push({
+					id: crypto.randomUUID(),
+					sourceLabel: marble.label,
+					time: scheduler!.now(),
+				})
+				statusMessage.value = `emitted '${marble.label}' at t=${Math.round(scheduler!.now())}ms`
+			},
+		})
+	scheduler.advanceTo(resumeTime)
+	// Replay consumed marbles so the operator's internal state is correct at resumeTime
+	nextSourceIdx = 0
+	while (nextSourceIdx < source.value.length && source.value[nextSourceIdx].time <= resumeTime) {
+		pipelineSubject.next(source.value[nextSourceIdx])
+		nextSourceIdx++
+	}
+})
+
 const currentPreset = (): Preset => PRESETS[presetIndex.value]
 
 function marbleXPercent(time: number): number {
