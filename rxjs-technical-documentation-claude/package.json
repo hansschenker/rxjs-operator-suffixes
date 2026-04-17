@@ -1,0 +1,29 @@
+{
+  "name": "rxjs-technical-documentation-claude",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "devDependencies": {
+    "@vue/test-utils": "^2.4.6",
+    "happy-dom": "^20.9.0",
+    "mermaid": "^11.13.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.2.4",
+    "vitepress-plugin-mermaid": "^2.0.17"
+  },
+  "dependencies": {
+    "rxjs": "^7.8.2",
+    "vitepress": "^1.6.4",
+    "vitest": "^4.1.1"
+  }
+}
