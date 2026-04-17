@@ -64,6 +64,35 @@ function onMarbleClick(event: MouseEvent, marbleId: string): void {
 	}
 }
 
+const draggingMarbleId = ref<string | null>(null)
+
+function onMarblePointerDown(event: PointerEvent, marbleId: string): void {
+	if (event.shiftKey || event.button === 2) return
+	event.preventDefault()
+	draggingMarbleId.value = marbleId
+	;(event.target as HTMLElement).setPointerCapture(event.pointerId)
+}
+
+function onMarblePointerMove(event: PointerEvent): void {
+	if (!draggingMarbleId.value) return
+	const track = (event.currentTarget as HTMLElement).closest('.lane-track') as HTMLElement | null
+	if (!track) return
+	const rect = track.getBoundingClientRect()
+	const xRatio = Math.min(Math.max(0, (event.clientX - rect.left) / rect.width), 1)
+	const newTime = Math.round(xRatio * TIMELINE_DURATION_MS)
+	source.value = source.value.map(
+		(m: SourceMarble): SourceMarble =>
+			m.id === draggingMarbleId.value ? { ...m, time: newTime } : m
+	)
+}
+
+function onMarblePointerUp(): void {
+	if (!draggingMarbleId.value) return
+	draggingMarbleId.value = null
+	source.value = relabelMarbles(source.value)
+	isPlaying.value = false
+}
+
 function onPlayPause(): void {
 	isPlaying.value = !isPlaying.value
 }
@@ -115,10 +144,15 @@ function onReset(): void {
 					v-for="m in source"
 					:key="m.id"
 					class="marble source-marble"
+					:class="{ dragging: draggingMarbleId === m.id }"
 					:style="{ left: `${marbleXPercent(m.time)}%` }"
 					data-testid="source-marble"
 					@click.stop="onMarbleClick($event, m.id)"
 					@contextmenu.prevent="onMarbleClick($event, m.id)"
+					@pointerdown="onMarblePointerDown($event, m.id)"
+					@pointermove="onMarblePointerMove($event)"
+					@pointerup="onMarblePointerUp"
+					@pointercancel="onMarblePointerUp"
 				>
 					<span class="marble-label" data-testid="source-marble-label">{{ m.label }}</span>
 				</div>
@@ -207,5 +241,10 @@ button:hover {
 }
 .marble-label {
 	pointer-events: none;
+}
+.marble.dragging {
+	transform: translate(-50%, -50%) scale(1.2);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+	z-index: 10;
 }
 </style>
