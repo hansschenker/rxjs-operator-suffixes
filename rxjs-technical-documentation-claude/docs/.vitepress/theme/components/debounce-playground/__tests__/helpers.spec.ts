@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { computeGhost } from '../helpers'
+import { computeGhost, relabelMarbles } from '../helpers'
 import type { SourceMarble, OutputMarble } from '../types'
 
 describe('computeGhost', (): void => {
@@ -51,5 +51,33 @@ describe('computeGhost', (): void => {
 			sourceLabel: 'a',
 			firesAt: 800,
 		})
+	})
+})
+
+describe('relabelMarbles', (): void => {
+	test('labels marbles a, b, c… in time order', (): void => {
+		const input: SourceMarble[] = [
+			{ id: '1', label: 'x', time: 300 },
+			{ id: '2', label: 'y', time: 100 },
+			{ id: '3', label: 'z', time: 200 },
+		]
+		const result = relabelMarbles(input)
+		expect(result.map((m: SourceMarble): string => m.label)).toEqual(['a', 'b', 'c'])
+		expect(result.map((m: SourceMarble): number => m.time)).toEqual([100, 200, 300])
+	})
+
+	test('handles empty input', (): void => {
+		expect(relabelMarbles([])).toEqual([])
+	})
+
+	test('caps at 26 marbles (rest unlabeled)', (): void => {
+		const input: SourceMarble[] = Array.from({ length: 30 }, (_, i: number): SourceMarble => ({
+			id: String(i),
+			label: '?',
+			time: i * 10,
+		}))
+		const result = relabelMarbles(input)
+		expect(result[25].label).toBe('z')
+		expect(result.length).toBe(26) // drops overflow
 	})
 })

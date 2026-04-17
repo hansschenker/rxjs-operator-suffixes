@@ -1,6 +1,7 @@
 import type { SourceMarble, OutputMarble, GhostMarble } from './types'
 
 const FIRED_TOLERANCE_MS = 1
+const MAX_MARBLES = 26
 
 export function computeGhost(
 	marbles: readonly SourceMarble[],
@@ -20,4 +21,14 @@ export function computeGhost(
 	if (alreadyFired) return null
 
 	return { sourceLabel: latest.label, firesAt }
+}
+
+export function relabelMarbles(marbles: readonly SourceMarble[]): SourceMarble[] {
+	return [...marbles]
+		.sort((a: SourceMarble, b: SourceMarble): number => a.time - b.time)
+		.slice(0, MAX_MARBLES)
+		.map((m: SourceMarble, i: number): SourceMarble => ({
+			...m,
+			label: String.fromCharCode(97 + i), // 'a' + i
+		}))
 }
