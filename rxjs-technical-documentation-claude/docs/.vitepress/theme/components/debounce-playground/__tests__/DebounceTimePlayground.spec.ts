@@ -37,4 +37,10 @@ describe('DebounceTimePlayground', (): void => {
 		)
 		expect(labels).toEqual(['a', 'b', 'c', 'd', 'e'])
 	})
+
+	test('renders an output lane (initially empty)', (): void => {
+		const wrapper = mount(DebounceTimePlayground)
+		expect(wrapper.find('[data-testid="output-lane"]').exists()).toBe(true)
+		expect(wrapper.findAll('[data-testid="output-marble"]')).toHaveLength(0)
+	})
 })

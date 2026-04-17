@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { PRESETS, DEFAULT_PRESET_INDEX } from './debounce-playground/presets'
-import { relabelMarbles } from './debounce-playground/helpers'
-import type { Preset, SourceMarble } from './debounce-playground/types'
+import { relabelMarbles, computeGhost } from './debounce-playground/helpers'
+import type { Preset, SourceMarble, OutputMarble, GhostMarble } from './debounce-playground/types'
 
 const TIMELINE_DURATION_MS = 3000
 
@@ -10,6 +10,17 @@ const presetIndex = ref<number>(DEFAULT_PRESET_INDEX)
 const debounceMs = ref<number>(300)
 const isPlaying = ref<boolean>(false)
 const source = ref<SourceMarble[]>([])
+const currentTime = ref<number>(0)
+const output = ref<OutputMarble[]>([])
+
+const ghost = computed((): GhostMarble | null =>
+	computeGhost(source.value, currentTime.value, debounceMs.value, output.value)
+)
+
+function clearPlaybackState(): void {
+	currentTime.value = 0
+	output.value = []
+}
 
 function loadPreset(index: number): void {
 	const preset: Preset = PRESETS[index]
@@ -21,6 +32,7 @@ function loadPreset(index: number): void {
 		}))
 	)
 	isPlaying.value = false
+	clearPlaybackState()
 }
 
 watch(presetIndex, (i: number): void => loadPreset(i), { immediate: true })
@@ -53,6 +65,7 @@ function onLaneClick(event: MouseEvent): void {
 		{ id: crypto.randomUUID(), label: nextLabel, time },
 	])
 	isPlaying.value = false
+	clearPlaybackState()
 }
 
 function onMarbleClick(event: MouseEvent, marbleId: string): void {
@@ -61,6 +74,7 @@ function onMarbleClick(event: MouseEvent, marbleId: string): void {
 		event.stopPropagation()
 		source.value = relabelMarbles(source.value.filter((m: SourceMarble): boolean => m.id !== marbleId))
 		isPlaying.value = false
+		clearPlaybackState()
 	}
 }
 
@@ -91,6 +105,7 @@ function onMarblePointerUp(): void {
 	draggingMarbleId.value = null
 	source.value = relabelMarbles(source.value)
 	isPlaying.value = false
+	clearPlaybackState()
 }
 
 function onPlayPause(): void {
@@ -99,6 +114,7 @@ function onPlayPause(): void {
 
 function onReset(): void {
 	isPlaying.value = false
+	clearPlaybackState()
 }
 </script>
 
@@ -155,6 +171,29 @@ function onReset(): void {
 					@pointercancel="onMarblePointerUp"
 				>
 					<span class="marble-label" data-testid="source-marble-label">{{ m.label }}</span>
+				</div>
+			</div>
+		</div>
+		<div class="lane output-lane" data-testid="output-lane">
+			<div class="lane-label">output$</div>
+			<div class="lane-track">
+				<div
+					v-for="o in output"
+					:key="o.id"
+					class="marble output-marble"
+					:style="{ left: `${marbleXPercent(o.time)}%` }"
+					data-testid="output-marble"
+				>
+					<span class="marble-label">{{ o.sourceLabel }}</span>
+				</div>
+				<div
+					v-if="ghost"
+					class="marble ghost-marble"
+					:style="{ left: `${marbleXPercent(ghost.firesAt)}%` }"
+					data-testid="ghost-marble"
+					:title="`fires at t=${ghost.firesAt}ms`"
+				>
+					<span class="marble-label">{{ ghost.sourceLabel }}</span>
 				</div>
 			</div>
 		</div>
@@ -246,5 +285,15 @@ button:hover {
 	transform: translate(-50%, -50%) scale(1.2);
 	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 	z-index: 10;
+}
+.output-marble {
+	background: var(--vp-c-tip-1);
+	color: var(--vp-c-bg);
+}
+.ghost-marble {
+	background: transparent;
+	border: 2px dashed var(--vp-c-tip-1);
+	color: var(--vp-c-tip-1);
+	opacity: 0.6;
 }
 </style>
