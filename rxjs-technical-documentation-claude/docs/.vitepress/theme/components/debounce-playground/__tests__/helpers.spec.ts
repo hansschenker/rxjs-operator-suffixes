@@ -43,4 +43,13 @@ describe('computeGhost', (): void => {
 			firesAt: 400,
 		})
 	})
+
+	test('ignores output entries from a different source label', (): void => {
+		const marbles: SourceMarble[] = [{ id: '1', label: 'a', time: 500 }]
+		const output: OutputMarble[] = [{ id: 'o1', sourceLabel: 'x', time: 800 }]
+		expect(computeGhost(marbles, 600, 300, output)).toEqual({
+			sourceLabel: 'a',
+			firesAt: 800,
+		})
+	})
 })
