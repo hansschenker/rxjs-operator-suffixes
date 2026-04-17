@@ -22,4 +22,19 @@ describe('DebounceTimePlayground', (): void => {
 		const slider = wrapper.find('[data-testid="debounce-ms-slider"]')
 		expect((slider.element as HTMLInputElement).value).toBe('300')
 	})
+
+	test('renders source marbles matching the default preset count', (): void => {
+		const wrapper = mount(DebounceTimePlayground)
+		const marbles = wrapper.findAll('[data-testid="source-marble"]')
+		// Default preset "Typing burst" has 5 marbles
+		expect(marbles).toHaveLength(5)
+	})
+
+	test('source marble labels match preset ordering', (): void => {
+		const wrapper = mount(DebounceTimePlayground)
+		const labels = wrapper.findAll('[data-testid="source-marble-label"]').map(
+			(w): string => w.text()
+		)
+		expect(labels).toEqual(['a', 'b', 'c', 'd', 'e'])
+	})
 })
