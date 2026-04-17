@@ -352,10 +352,12 @@ onBeforeUnmount((): void => {
 .debounce-playground {
 	border: 1px solid var(--vp-c-divider);
 	border-radius: 8px;
-	padding: 1rem;
+	padding: 1.25rem;
 	background: var(--vp-c-bg-soft);
 	margin: 1.5rem 0;
 	font-family: var(--vp-font-family-base);
+	max-width: 100%;
+	overflow-x: auto;
 }
 .controls {
 	display: flex;
@@ -406,6 +408,7 @@ button:hover {
 	background: var(--vp-c-bg);
 	border-radius: 4px;
 	border: 1px solid var(--vp-c-divider);
+	min-width: 500px;
 }
 .marble {
 	position: absolute;

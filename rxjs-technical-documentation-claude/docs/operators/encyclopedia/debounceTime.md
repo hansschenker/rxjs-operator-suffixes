@@ -12,6 +12,10 @@ date: 2026-03-27
 
 > Waits for the source to go silent for a specified duration, then emits the most recent value — resetting the timer on every new source emission.
 
+#### Interactive Playground
+
+Drag the marbles on the source lane, adjust the `debounceTime(ms)` slider, and press ▶ Play to see how the silence-timer resets as each new source value arrives. Shift-click a marble to remove it.
+
 <DebounceTimePlayground />
 
 ---
