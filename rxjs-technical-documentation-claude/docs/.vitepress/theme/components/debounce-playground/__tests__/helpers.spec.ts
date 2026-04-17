@@ -80,4 +80,14 @@ describe('relabelMarbles', (): void => {
 		expect(result[25].label).toBe('z')
 		expect(result.length).toBe(26) // drops overflow
 	})
+
+	test('preserves insertion order for marbles with identical times', (): void => {
+		const input: SourceMarble[] = [
+			{ id: '1', label: 'x', time: 100 },
+			{ id: '2', label: 'y', time: 100 },
+		]
+		const result = relabelMarbles(input)
+		expect(result.map((m: SourceMarble): string => m.id)).toEqual(['1', '2'])
+		expect(result.map((m: SourceMarble): string => m.label)).toEqual(['a', 'b'])
+	})
 })
