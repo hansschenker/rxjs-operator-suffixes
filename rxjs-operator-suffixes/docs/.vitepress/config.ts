@@ -8,6 +8,7 @@ export default defineConfig({
 		nav: [
 			{ text: 'Home', link: '/' },
 			{ text: 'Suffix Reference', link: '/suffix-overview' },
+			{ text: 'Decision Trees', link: '/decisions/' },
 			{ text: 'Operator Deep Dives', link: '/operators/map' },
 		],
 		sidebar: [
@@ -45,6 +46,24 @@ export default defineConfig({
 						text: 'Scheduling & Timing',
 						link: '/categories/scheduling-timing',
 					},
+				],
+			},
+			{
+				text: 'Decision Trees',
+				items: [
+					{ text: 'Overview', link: '/decisions/' },
+					{ text: 'Higher-Order / Flattening', link: '/decisions/flattening' },
+					{ text: 'Windowing & Buffering', link: '/decisions/windowing-buffering' },
+					{ text: 'Rate Limiting', link: '/decisions/rate-limiting' },
+					{ text: 'Transformation', link: '/decisions/transformation' },
+					{ text: 'Filtering', link: '/decisions/filtering' },
+					{ text: 'Combination', link: '/decisions/combination' },
+					{ text: 'Creation', link: '/decisions/creation' },
+					{ text: 'Multicasting & Sharing', link: '/decisions/multicasting' },
+					{ text: 'Error Handling & Recovery', link: '/decisions/error-handling' },
+					{ text: 'Side Effects', link: '/decisions/side-effects' },
+					{ text: 'Notification Objects', link: '/decisions/notification' },
+					{ text: 'Scheduling & Timing', link: '/decisions/scheduling-timing' },
 				],
 			},
 			{
