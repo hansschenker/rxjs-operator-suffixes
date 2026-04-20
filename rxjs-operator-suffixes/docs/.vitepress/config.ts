@@ -1,6 +1,18 @@
-import { defineConfig } from 'vitepress'
+import { withMermaid } from "vitepress-plugin-mermaid";
 
-export default defineConfig({
+export default withMermaid({
+    mermaid: {},
+    mermaidPlugin: {
+      class: "mermaid my-class",
+    },
+    vite: {
+      optimizeDeps: {
+        include: ['mermaid'],
+      },
+      ssr: {
+        noExternal: ['vitepress-plugin-mermaid'],
+      },
+    },
 	title: 'RxJS Operator Suffixes',
 	description: 'RxJS operator naming conventions grouped by base name and suffix',
 	ignoreDeadLinks: true,
