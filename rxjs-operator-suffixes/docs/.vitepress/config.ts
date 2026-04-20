@@ -10,6 +10,7 @@ export default defineConfig({
 			{ text: 'Suffix Reference', link: '/suffix-overview' },
 			{ text: 'Decision Trees', link: '/decisions/' },
 			{ text: 'Operator Deep Dives', link: '/operators/map' },
+			{ text: 'About', link: '/about' },
 		],
 		sidebar: [
 			{
@@ -249,6 +250,12 @@ export default defineConfig({
 				collapsed: true,
 				items: [
 					{ text: 'Full API List', link: '/rxjs-api-function-list' },
+				],
+			},
+			{
+				text: 'About',
+				items: [
+					{ text: 'About This Documentation', link: '/about' },
 				],
 			},
 		],

@@ -2,7 +2,7 @@
 title: "Combination"
 ---
 
-> Not sure which to use? [Decision tree →](../decisions/combination)
+> Not sure which operator to use? [Decision tree →](../decisions/combination)
 
 Join **multiple streams** into one. The suffix describes the join strategy: latest-value merge, sequential append, or positional pairing.
 

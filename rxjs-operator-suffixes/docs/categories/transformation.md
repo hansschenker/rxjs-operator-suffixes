@@ -2,7 +2,7 @@
 title: "Transformation"
 ---
 
-> Not sure which to use? [Decision tree →](../decisions/transformation)
+> Not sure which operator to use? [Decision tree →](../decisions/transformation)
 
 Transform the **shape or value** of each emission without affecting which values are emitted or the number of subscriptions. One value in, one transformed value out (unless the operator also aggregates — see Aggregation).
 

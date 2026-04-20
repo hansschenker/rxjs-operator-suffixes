@@ -2,7 +2,7 @@
 title: "Notification Objects"
 ---
 
-> Not sure which to use? [Decision tree →](../decisions/notification)
+> Not sure which operator to use? [Decision tree →](../decisions/notification)
 
 Operators that **reify** stream notifications into plain value objects (`Notification<T>`), or **unreify** them back into live notifications. Used for higher-order error handling, stream introspection, and testing.
 

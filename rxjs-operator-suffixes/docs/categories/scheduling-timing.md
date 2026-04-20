@@ -2,7 +2,7 @@
 title: "Scheduling & Timing"
 ---
 
-> Not sure which to use? [Decision tree →](../decisions/scheduling-timing)
+> Not sure which operator to use? [Decision tree →](../decisions/scheduling-timing)
 
 Control *when* subscriptions are established (`subscribeOn`) or *when* notifications are delivered (`observeOn`), and operators whose primary axis is the **clock**.
 

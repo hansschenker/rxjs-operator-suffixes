@@ -2,7 +2,7 @@
 title: "Multicasting & Sharing"
 ---
 
-> Not sure which to use? [Decision tree →](../decisions/multicasting)
+> Not sure which operator to use? [Decision tree →](../decisions/multicasting)
 
 Cause a **single upstream subscription** to be shared among multiple downstream subscribers — preventing repeated cold-Observable side effects such as duplicate HTTP requests.
 

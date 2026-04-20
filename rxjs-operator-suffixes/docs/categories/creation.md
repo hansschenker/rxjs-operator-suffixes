@@ -2,7 +2,7 @@
 title: "Creation"
 ---
 
-> Not sure which to use? [Decision tree →](../decisions/creation)
+> Not sure which operator to use? [Decision tree →](../decisions/creation)
 
 Operators that **produce** an Observable from scratch — no upstream source Observable required. The base name describes the origin or shape of the values.
 

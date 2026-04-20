@@ -2,7 +2,7 @@
 title: "Rate Limiting"
 ---
 
-> Not sure which to use? [Decision tree →](../decisions/rate-limiting)
+> Not sure which operator to use? [Decision tree →](../decisions/rate-limiting)
 
 Control the **pace** of emissions by selectively suppressing values within a time window. All four families are **lossy** — values that fall in the suppression window are silently dropped. The `Time` suffix replaces a trigger Observable with a plain millisecond duration.
 

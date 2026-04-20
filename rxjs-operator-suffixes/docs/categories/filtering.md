@@ -2,7 +2,7 @@
 title: "Filtering"
 ---
 
-> Not sure which to use? [Decision tree →](../decisions/filtering)
+> Not sure which operator to use? [Decision tree →](../decisions/filtering)
 
 Decide **which values pass** through the stream. Unlike rate limiting (drops by time), filtering drops by **position**, **count**, **content**, or **identity**.
 

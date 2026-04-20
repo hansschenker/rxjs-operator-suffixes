@@ -2,7 +2,7 @@
 title: "Windowing & Buffering"
 ---
 
-> Not sure which to use? [Decision tree →](../decisions/windowing-buffering)
+> Not sure which operator to use? [Decision tree →](../decisions/windowing-buffering)
 
 Collect source emissions into **groups** instead of passing them one by one. `buffer` emits **arrays**, `window` emits **Observables**. The suffix controls the boundary condition that closes each group.
 

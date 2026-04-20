@@ -2,7 +2,7 @@
 title: "Side Effects"
 ---
 
-> Not sure which to use? [Decision tree →](../decisions/side-effects)
+> Not sure which operator to use? [Decision tree →](../decisions/side-effects)
 
 Operators that let you **observe or react** to stream events without modifying the values passing through. Transparent to the data flow but essential for debugging, logging, and cleanup.
 

@@ -2,7 +2,7 @@
 title: "Higher-Order Operators (Flattening)"
 ---
 
-> Not sure which to use? [Decision tree →](../decisions/flattening)
+> Not sure which operator to use? [Decision tree →](../decisions/flattening)
 
 Each source value is projected into an inner Observable. The inner streams are then flattened back into a single output. The **base name** determines the inner subscription strategy — how many run concurrently and what happens when a new inner arrives while others are active.
 

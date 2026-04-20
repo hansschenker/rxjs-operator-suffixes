@@ -2,7 +2,7 @@
 title: "Error Handling & Recovery"
 ---
 
-> Not sure which to use? [Decision tree →](../decisions/error-handling)
+> Not sure which operator to use? [Decision tree →](../decisions/error-handling)
 
 ## retry
 
