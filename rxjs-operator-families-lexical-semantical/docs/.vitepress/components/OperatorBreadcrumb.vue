@@ -12,13 +12,14 @@ const familyLetter = computed<string>(() => {
 })
 
 function backToNavigator(): void {
-  router.go(`/?family=${familyLetter.value}`)
+  const letter = familyLetter.value
+  router.go(letter ? `/?family=${letter}` : '/')
 }
 </script>
 
 <template>
   <div class="breadcrumb-bar">
-    <nav class="breadcrumb" aria-label="breadcrumb">
+    <nav v-if="frontmatter.family" class="breadcrumb" aria-label="breadcrumb">
       <a class="back-link" href="/" @click.prevent="backToNavigator">← Navigator</a>
       <span class="sep">›</span>
       <span class="crumb">{{ frontmatter.family }}</span>
