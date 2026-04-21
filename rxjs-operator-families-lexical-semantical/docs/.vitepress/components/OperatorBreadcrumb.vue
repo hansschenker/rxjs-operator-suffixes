@@ -18,8 +18,8 @@ function backToNavigator(): void {
 </script>
 
 <template>
-  <div class="breadcrumb-bar">
-    <nav v-if="frontmatter.family" class="breadcrumb" aria-label="breadcrumb">
+  <div v-if="frontmatter.family" class="breadcrumb-bar">
+    <nav class="breadcrumb" aria-label="breadcrumb">
       <a class="back-link" href="/" @click.prevent="backToNavigator">← Navigator</a>
       <span class="sep">›</span>
       <span class="crumb">{{ frontmatter.family }}</span>
