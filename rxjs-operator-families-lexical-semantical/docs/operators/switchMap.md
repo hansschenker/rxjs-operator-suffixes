@@ -2,7 +2,7 @@
 title: switchMap
 family: Flattening Policies
 subFamily: Only latest
-tagline: Cancel previous inner observable, subscribe to the latest
+tagline: Cancel previous inner Observable, subscribe to latest
 ---
 
 <OperatorBreadcrumb />
@@ -22,11 +22,11 @@ Projects each source value to an inner Observable and subscribes to it. When the
 ## Marble diagram
 
 ```
-source:     --a-----------b---------c--|
-project(a): ----1--2--3|
-project(b):               ----4--5|
-project(c):                         ----6--7|
-result:     ----1--2--3-------4--5------6--7|
+source:     --a------b-----------c--|
+project(a): ----1--2----3--4|
+project(b):          ----4--5|
+project(c):                    ----6--7|
+result:     ----1--2-----4--5------6--7|
 ```
 
 ## When to use

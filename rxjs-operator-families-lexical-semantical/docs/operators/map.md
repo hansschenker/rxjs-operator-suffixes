@@ -20,9 +20,9 @@ Applies a projection function to each emitted value and passes the result downst
 ## Marble diagram
 
 ```
-source: --1---2---3---4--|
+source: --1--2--3--4--|
 map(x => x * 10)
-result: --10--20--30--40--|
+result: --10-20-30-40--|
 ```
 
 ## When to use
