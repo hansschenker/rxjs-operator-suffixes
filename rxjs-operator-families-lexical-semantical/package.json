@@ -1,0 +1,21 @@
+{
+  "name": "rxjs-operator-families-lexical-semantical",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "test": "vitest run src"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vite": "^7.2.4"
+  },
+  "dependencies": {
+    "rxjs": "^7.8.2",
+    "vitepress": "^1.6.4",
+    "vitest": "^4.1.4"
+  }
+}
