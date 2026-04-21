@@ -32,7 +32,7 @@ describe('taxonomy structure', () => {
     expect(new Set(slugs).size).toBe(slugs.length)
   })
 
-  it('all operator slugs match camelCase identifier pattern', () => {
+  it('all operator slugs are valid JavaScript identifiers', () => {
     const slugs = taxonomy.flatMap(f =>
       f.subFamilies.flatMap(s => s.operators.map(o => o.slug))
     )
@@ -58,6 +58,18 @@ describe('taxonomy structure', () => {
           expect(op.slug).toBe(op.name)
         }
       }
+    }
+  })
+
+  it('all family labels are unique', () => {
+    const labels = taxonomy.map(f => f.label)
+    expect(new Set(labels).size).toBe(labels.length)
+  })
+
+  it('all subFamily labels are unique within their family', () => {
+    for (const family of taxonomy) {
+      const labels = family.subFamilies.map(s => s.label)
+      expect(new Set(labels).size).toBe(labels.length)
     }
   })
 })

@@ -1,21 +1,21 @@
 export interface Operator {
-  name: string
-  slug: string
-  tagline: string
+  readonly name: string
+  readonly slug: string
+  readonly tagline: string
 }
 
 export interface SubFamily {
-  label: string
-  operators: Operator[]
+  readonly label: string
+  readonly operators: readonly Operator[]
 }
 
 export interface Family {
-  label: string
-  letter: string
-  subFamilies: SubFamily[]
+  readonly label: string
+  readonly letter: string
+  readonly subFamilies: readonly SubFamily[]
 }
 
-export const taxonomy: Family[] = [
+export const taxonomy: readonly Family[] = [
   {
     label: 'Creation / Adaptation',
     letter: 'B',
@@ -447,7 +447,6 @@ export const taxonomy: Family[] = [
           { name: 'toArray', slug: 'toArray', tagline: 'Collect all values into an array, emit on completion' },
           { name: 'firstValueFrom', slug: 'firstValueFrom', tagline: 'Await the first value as a Promise' },
           { name: 'lastValueFrom', slug: 'lastValueFrom', tagline: 'Await the last value as a Promise' },
-          { name: 'forEach', slug: 'forEach', tagline: 'Iterate over values in sequence returning a Promise' },
         ]
       },
     ]
