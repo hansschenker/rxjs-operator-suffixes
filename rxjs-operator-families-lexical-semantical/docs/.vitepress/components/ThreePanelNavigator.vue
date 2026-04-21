@@ -2,13 +2,12 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vitepress'
 import { taxonomy } from '@taxonomy'
-import type { Family, SubFamily, Operator } from '@taxonomy'
+import type { Family, SubFamily } from '@taxonomy'
 
 const router = useRouter()
 
 const selectedFamily = ref<Family>(taxonomy[0])
 const selectedSubFamily = ref<SubFamily | null>(null)
-const selectedOperator = ref<Operator | null>(null)
 
 onMounted(() => {
 	const params = new URLSearchParams(window.location.search)
@@ -24,16 +23,13 @@ onMounted(() => {
 function selectFamily(family: Family): void {
 	selectedFamily.value = family
 	selectedSubFamily.value = null
-	selectedOperator.value = null
 }
 
 function selectSubFamily(sub: SubFamily): void {
 	selectedSubFamily.value = sub
-	selectedOperator.value = null
 }
 
-function selectOperator(op: Operator): void {
-	selectedOperator.value = op
+function selectOperator(op: { slug: string }): void {
 	router.go(`/operators/${op.slug}`)
 }
 </script>
@@ -74,7 +70,6 @@ function selectOperator(op: Operator): void {
 				<li
 					v-for="op in selectedSubFamily.operators"
 					:key="op.slug"
-					:class="{ active: selectedOperator?.slug === op.slug }"
 					@click="selectOperator(op)"
 				>
 					<span class="op-name">{{ op.name }}</span>
