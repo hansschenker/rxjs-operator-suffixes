@@ -22,9 +22,11 @@ const DEFINITIONAL_VERBS = ['refers to', 'can be defined as', 'means', 'is', 'ar
  */
 function isDefinitionalLine(line, term) {
 	const lower = line.toLowerCase()
-	const termIdx = lower.indexOf(term.toLowerCase())
-	if (termIdx === -1) return false
-	const after = lower.slice(termIdx + term.length).trimStart()
+	const escaped = term.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+	const termRe = new RegExp(`\\b${escaped}\\b`)
+	const m = termRe.exec(lower)
+	if (!m) return false
+	const after = lower.slice(m.index + term.length).trimStart()
 	return DEFINITIONAL_VERBS.some(verb => after.startsWith(verb + ' ') || after.startsWith(verb + ','))
 }
 
@@ -92,6 +94,7 @@ export function walkRepo(dirPath, glossary) {
 
 	function walk(dir) {
 		for (const entry of readdirSync(dir)) {
+			if (entry === 'node_modules' || entry.startsWith('.')) continue
 			const full = join(dir, entry)
 			const stat = statSync(full)
 			if (stat.isDirectory()) {

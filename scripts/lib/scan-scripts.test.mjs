@@ -71,6 +71,14 @@ describe('extractDefinitions', () => {
 		const results = extractDefinitions(file, new Map([['cold observable', 'definition']]))
 		expect(results).toHaveLength(0)
 	})
+
+	test('does not match term appearing as a substring of a longer word', () => {
+		const file = writeTemp('lesson.md',
+			'Multicasting is a pattern for sharing a single execution.\n'
+		)
+		const results = extractDefinitions(file, new Map([['cast', 'definition']]))
+		expect(results).toHaveLength(0)
+	})
 })
 
 describe('walkRepo', () => {
