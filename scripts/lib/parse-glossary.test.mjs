@@ -48,6 +48,7 @@ describe('parseGlossary', () => {
 		const { terms, warnings } = parseGlossary(
 			'## cold observable\nFirst definition.\n\n## cold observable\nSecond definition.\n'
 		)
+		expect(terms.size).toBe(1)
 		expect(terms.get('cold observable')).toBe('Second definition.')
 		expect(warnings).toHaveLength(1)
 		expect(warnings[0]).toContain('cold observable')
