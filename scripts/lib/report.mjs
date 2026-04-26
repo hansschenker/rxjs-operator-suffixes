@@ -25,7 +25,7 @@ export function formatTerminal(findings, stats) {
 	}
 
 	const lines = [
-		`TERMINOLOGY FINDINGS — ${stats.repos} repos, ${stats.files} files scanned\n`
+		`TERMINOLOGY FINDINGS — ${stats.repos} repos, ${stats.files} files scanned in ${stats.durationMs}ms\n`
 	]
 
 	for (const f of findings) {

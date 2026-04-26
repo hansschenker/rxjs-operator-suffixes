@@ -1,7 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
 
-const client = new Anthropic()
-
 /**
  * @param {string} filePath
  * @param {string} fileContent
@@ -32,6 +30,7 @@ Return [] if no issues found. Output raw JSON only — no markdown fences, no ex
  * @returns {Promise<import('@anthropic-ai/sdk').Message>}
  */
 async function callApi(prompt) {
+	const client = new Anthropic()
 	return client.messages.create({
 		model: 'claude-haiku-4-5-20251001',
 		max_tokens: 1024,
@@ -51,7 +50,14 @@ export async function llmCheck(filePath, fileContent, glossary) {
 	let message
 	try {
 		message = await callApi(prompt)
-	} catch {
+	} catch (firstErr) {
+		// Skip retry for permanent errors (auth, not found)
+		const status = firstErr?.status ?? firstErr?.error?.status
+		if (status === 401 || status === 403 || status === 404) {
+			console.warn(`Warning: LLM check failed for ${filePath} (${firstErr.message}) — falling back to Tier 1 only`)
+			return []
+		}
+		console.warn(`Warning: LLM check attempt 1 failed for ${filePath} (${firstErr.message}) — retrying`)
 		try {
 			message = await callApi(prompt)
 		} catch (err) {

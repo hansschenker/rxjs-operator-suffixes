@@ -29,7 +29,8 @@ export function tokenize(text) {
 export function jaccardSimilarity(a, b) {
 	const setA = tokenize(a)
 	const setB = tokenize(b)
-	if (setA.size === 0 && setB.size === 0) return 1
+	// Two unmeasurable strings have no demonstrable similarity
+	if (setA.size === 0 && setB.size === 0) return 0
 	const intersection = [...setA].filter(x => setB.has(x))
 	const union = new Set([...setA, ...setB])
 	return intersection.length / union.size
