@@ -48,6 +48,7 @@ jobs:
 
       - name: Run terminology check
         id: check
+        continue-on-error: true
         run: |
           node scripts/check-terminology.mjs --format json > /tmp/findings.json
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
@@ -58,7 +59,9 @@ jobs:
           echo "## Terminology Check Results" >> "$GITHUB_STEP_SUMMARY"
           node -e "
             const fs = require('fs');
-            const { stats, findings } = JSON.parse(fs.readFileSync('/tmp/findings.json', 'utf8'));
+            let result = { stats: { repos: 0, files: 0, durationMs: 0 }, findings: [] };
+            try { result = JSON.parse(fs.readFileSync('/tmp/findings.json', 'utf8')); } catch {}
+            const { stats, findings } = result;
             const lines = [\`**Repos:** \${stats.repos} | **Files:** \${stats.files} | **Duration:** \${stats.durationMs}ms\`];
             if (findings.length === 0) {
               lines.push('', '✅ No terminology findings.');
@@ -73,11 +76,13 @@ jobs:
           "
 
       - name: Comment on PR
-        if: github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request'
         run: |
           BODY=$(node -e "
             const fs = require('fs');
-            const { stats, findings } = JSON.parse(fs.readFileSync('/tmp/findings.json', 'utf8'));
+            let result = { stats: { repos: 0, files: 0, durationMs: 0 }, findings: [] };
+            try { result = JSON.parse(fs.readFileSync('/tmp/findings.json', 'utf8')); } catch {}
+            const { stats, findings } = result;
             const lines = ['## Course Terminology Check', ''];
             if (findings.length === 0) {
               lines.push('✅ No terminology findings — ' + stats.files + ' files scanned.');
@@ -96,7 +101,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fail if findings exist
-        if: steps.check.outputs.exit_code != '0'
+        if: always() && steps.check.outputs.exit_code != '0'
         run: |
           echo "Terminology findings detected. Review the job summary."
           exit 1
