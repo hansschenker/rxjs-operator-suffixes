@@ -33,6 +33,11 @@ async function main() {
 	const opts = parseArgs(process.argv)
 
 	const glossaryPath = join(WORKSPACE, 'glossary.md')
+	if (opts.deep && !process.env.ANTHROPIC_API_KEY) {
+		console.error('Error: ANTHROPIC_API_KEY environment variable is required for --deep')
+		process.exit(1)
+	}
+
 	if (!existsSync(glossaryPath)) {
 		console.error('Error: glossary.md not found at rxjs/ root — create it before running')
 		process.exit(1)
@@ -80,18 +85,14 @@ async function main() {
 
 	// Tier 2: LLM pass (--deep, changed files only)
 	if (opts.deep) {
-		if (!process.env.ANTHROPIC_API_KEY) {
-			console.error('Error: ANTHROPIC_API_KEY environment variable is required for --deep')
-			process.exit(1)
-		}
-
 		const { llmCheck } = await import('./lib/llm-check.mjs')
 
 		let changedFiles = []
 		try {
 			changedFiles = execSync('git diff --name-only main', { cwd: WORKSPACE, encoding: 'utf8' })
 				.split('\n')
-				.filter(f => f.trim().endsWith('.md'))
+				.map(f => f.trim())
+				.filter(f => f.endsWith('.md'))
 		} catch {
 			console.warn('Warning: could not determine changed files (no base branch) — skipping LLM pass')
 		}
