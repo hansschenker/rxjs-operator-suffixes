@@ -1,0 +1,102 @@
+name: Course Terminology Quality
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+jobs:
+  terminology-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout rxjs workspace
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout rxjs-insights
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/rxjs-insights
+          path: rxjs-insights
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout rxjs-deep-dive-claude-superpowers
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/rxjs-deep-dive-claude-superpowers
+          path: rxjs-deep-dive-claude-superpowers
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout rxjs-what-is-it-meta
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/rxjs-what-is-it-meta
+          path: rxjs-what-is-it-meta
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run terminology check
+        id: check
+        run: |
+          node scripts/check-terminology.mjs --format json > /tmp/findings.json
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Write to job summary
+        if: always()
+        run: |
+          echo "## Terminology Check Results" >> "$GITHUB_STEP_SUMMARY"
+          node -e "
+            const fs = require('fs');
+            const { stats, findings } = JSON.parse(fs.readFileSync('/tmp/findings.json', 'utf8'));
+            const lines = [\`**Repos:** \${stats.repos} | **Files:** \${stats.files} | **Duration:** \${stats.durationMs}ms\`];
+            if (findings.length === 0) {
+              lines.push('', '✅ No terminology findings.');
+            } else {
+              lines.push('', \`⚠️ \${findings.length} finding(s)\`, '');
+              findings.forEach(f => {
+                const loc = f.line || f.line_hint || '?';
+                lines.push(\`- [\${f.type.toUpperCase()}] \\\`\${f.file}:\${loc}\\\` — **\${f.term}**\`);
+              });
+            }
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
+          "
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        run: |
+          BODY=$(node -e "
+            const fs = require('fs');
+            const { stats, findings } = JSON.parse(fs.readFileSync('/tmp/findings.json', 'utf8'));
+            const lines = ['## Course Terminology Check', ''];
+            if (findings.length === 0) {
+              lines.push('✅ No terminology findings — ' + stats.files + ' files scanned.');
+            } else {
+              lines.push('⚠️ ' + findings.length + ' finding(s) — ' + stats.files + ' files scanned.', '');
+              findings.slice(0, 20).forEach(f => {
+                const loc = f.line || f.line_hint || '?';
+                lines.push('- \`' + f.file + ':' + loc + '\` — **' + f.term + '**: ' + (f.issue || 'contradicts glossary'));
+              });
+              if (findings.length > 20) lines.push('', '…and ' + (findings.length - 20) + ' more. See job summary for full list.');
+            }
+            process.stdout.write(lines.join('\n'));
+          ")
+          gh pr comment --edit-last --body "$BODY" 2>/dev/null || gh pr comment --body "$BODY"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fail if findings exist
+        if: steps.check.outputs.exit_code != '0'
+        run: |
+          echo "Terminology findings detected. Review the job summary."
+          exit 1
