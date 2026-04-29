@@ -29,7 +29,7 @@ export interface OperatorResult {
 
 export interface TreeState {
   currentNode: TreeNode
-  history:     TreeNode[]
+  history:     QuestionNode[]
   breadcrumb:  BreadcrumbStep[]
 }
 
