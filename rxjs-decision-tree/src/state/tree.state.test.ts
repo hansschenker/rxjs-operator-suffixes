@@ -20,6 +20,7 @@ const mockInitial: TreeState = {
 	currentNode: MOCK_ROOT,
 	history:     [],
 	breadcrumb:  [],
+	detailView:  null,
 }
 
 const treeReducer = makeReducer(mockInitial)

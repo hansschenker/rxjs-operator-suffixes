@@ -10,6 +10,7 @@ export const initial: TreeState = {
 	currentNode: ROOT,
 	history:     [],
 	breadcrumb:  [],
+	detailView:  null,
 }
 
 const treeReducer = makeReducer(initial)

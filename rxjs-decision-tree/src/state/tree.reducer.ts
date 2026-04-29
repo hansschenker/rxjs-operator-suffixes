@@ -10,6 +10,7 @@ export function makeReducer(initial: TreeState): (state: TreeState, action: Acti
 					currentNode: action.next,
 					history:     [...state.history, state.currentNode],
 					breadcrumb:  [...state.breadcrumb, { nodeId: state.currentNode.id, label: action.label }],
+					detailView:  null,
 				}
 			}
 			case 'back':
@@ -18,9 +19,24 @@ export function makeReducer(initial: TreeState): (state: TreeState, action: Acti
 					currentNode: state.history.at(-1)!,
 					history:     state.history.slice(0, -1),
 					breadcrumb:  state.breadcrumb.slice(0, -1),
+					detailView:  null,
 				}
 			case 'reset':
 				return initial
+			case 'open-detail':
+				return {
+					...state,
+					detailView: {
+						operatorName: action.operatorName,
+						oneliner:     action.oneliner,
+						wikiPath:     action.wikiPath,
+					},
+				}
+			case 'close-detail':
+				return {
+					...state,
+					detailView: null,
+				}
 		}
 	}
 }
