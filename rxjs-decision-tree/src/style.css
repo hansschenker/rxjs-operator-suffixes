@@ -254,3 +254,158 @@ body {
 
 .nav-btn:hover { color: var(--text-muted); }
 .nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+/* ── Detail view ──────────────────────────────────────────────────────────── */
+
+.detail-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 1rem;
+	padding-bottom: 0.75rem;
+	border-bottom: 1px solid #1e293b;
+}
+
+.detail-op-name {
+	font-family: ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace;
+	font-size: 1.1rem;
+	font-weight: 700;
+	color: #a78bfa;
+}
+
+.detail-oneliner {
+	color: #94a3b8;
+	margin-bottom: 1.25rem;
+	font-size: 0.95rem;
+}
+
+.detail-marble {
+	margin-bottom: 1.5rem;
+	overflow-x: auto;
+}
+
+.detail-marble svg {
+	max-width: 100%;
+	height: auto;
+	border-radius: 8px;
+}
+
+.detail-code {
+	background: #0f172a;
+	border: 1px solid #1e293b;
+	border-radius: 6px;
+	padding: 1rem;
+	overflow-x: auto;
+	margin-bottom: 1.25rem;
+	font-size: 0.82rem;
+	line-height: 1.6;
+	color: #e2e8f0;
+}
+
+.detail-section {
+	border: 1px solid #1e293b;
+	border-radius: 6px;
+	margin-bottom: 0.75rem;
+	overflow: hidden;
+}
+
+.detail-summary {
+	padding: 0.6rem 1rem;
+	cursor: pointer;
+	color: #818cf8;
+	font-size: 0.9rem;
+	list-style: none;
+	user-select: none;
+}
+
+.detail-summary:hover {
+	background: #1e293b;
+}
+
+.detail-section[open] .detail-summary {
+	border-bottom: 1px solid #1e293b;
+}
+
+.detail-gotchas {
+	padding: 0.75rem 1rem 0.75rem 2rem;
+	color: #94a3b8;
+	font-size: 0.88rem;
+	line-height: 1.7;
+}
+
+.detail-gotchas li {
+	margin-bottom: 0.4rem;
+}
+
+.detail-related {
+	padding: 0.75rem 1rem;
+}
+
+.detail-table {
+	border-collapse: collapse;
+	font-size: 0.83rem;
+	width: 100%;
+}
+
+.detail-table th {
+	color: #64748b;
+	text-align: left;
+	padding: 0.3rem 0.75rem;
+	border-bottom: 1px solid #1e293b;
+}
+
+.detail-table td {
+	color: #94a3b8;
+	padding: 0.3rem 0.75rem;
+	border-bottom: 1px solid #0f172a;
+}
+
+.detail-rule {
+	font-style: italic;
+	color: #64748b;
+	font-size: 0.88rem;
+	margin: 0.75rem 0;
+	padding-left: 0.75rem;
+	border-left: 2px solid #334155;
+}
+
+.detail-wiki-link {
+	display: inline-block;
+	margin-top: 0.75rem;
+	color: #6ee7b7;
+	font-size: 0.85rem;
+	text-decoration: none;
+}
+
+.detail-wiki-link:hover {
+	text-decoration: underline;
+}
+
+/* Operator name as button on leaf cards */
+
+.op-detail-btn {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 0;
+	font-family: ui-monospace, 'Cascadia Code', 'JetBrains Mono', monospace;
+	font-size: 1rem;
+	font-weight: 700;
+	color: #6ee7b7;
+	text-align: left;
+}
+
+.op-detail-btn:hover {
+	color: #a7f3d0;
+	text-decoration: underline;
+}
+
+.result-alt .op-detail-btn {
+	font-size: 0.9rem;
+	font-weight: 500;
+	color: #94a3b8;
+}
+
+.result-alt .op-detail-btn:hover {
+	color: #cbd5e1;
+}
