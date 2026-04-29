@@ -1,3 +1,4 @@
+// src/marble/configs/exhaustMap.ts
 import type { MarbleDiagramConfig } from '../marble.types'
 
 export const exhaustMapConfig: MarbleDiagramConfig = {

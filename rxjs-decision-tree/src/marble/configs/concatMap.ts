@@ -1,3 +1,4 @@
+// src/marble/configs/concatMap.ts
 import type { MarbleDiagramConfig } from '../marble.types'
 
 export const concatMapConfig: MarbleDiagramConfig = {
