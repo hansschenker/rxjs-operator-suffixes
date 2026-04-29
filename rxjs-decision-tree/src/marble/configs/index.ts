@@ -153,6 +153,11 @@ const registry: Record<string, MarbleEntry> = {
 	finalize:              { kind: 'first-order',  config: finalizeConfig },
 }
 
+/**
+ * Returns SVG string for the operator identified by its wikiPath.
+ * Uses the path's last segment as registry key (e.g. '/operators/switchMap' → 'switchMap').
+ * Returns null if no config is registered for that operator.
+ */
 export function getMarbleSVG(wikiPath: string): string | null {
 	const key = wikiPath.split('/').pop() ?? ''
 	const entry = registry[key]
