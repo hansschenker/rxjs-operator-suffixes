@@ -69,4 +69,58 @@ describe('treeReducer', () => {
 		const s2 = treeReducer(s1, { kind: 'back' })
 		expect(s2.breadcrumb.length).toBe(s2.history.length)
 	})
+
+	test('open-detail sets detailView from action payload', () => {
+		const next = treeReducer(mockInitial, {
+			kind: 'open-detail',
+			operatorName: 'switchMap',
+			oneliner: 'Cancel current inner on new outer value.',
+			wikiPath: '/operators/switchMap',
+		})
+		expect(next.detailView).toEqual({
+			operatorName: 'switchMap',
+			oneliner: 'Cancel current inner on new outer value.',
+			wikiPath: '/operators/switchMap',
+		})
+		expect(next.currentNode).toBe(mockInitial.currentNode)
+	})
+
+	test('close-detail clears detailView', () => {
+		const withDetail = treeReducer(mockInitial, {
+			kind: 'open-detail',
+			operatorName: 'map',
+			oneliner: 'Transform values.',
+			wikiPath: '/operators/map',
+		})
+		const closed = treeReducer(withDetail, { kind: 'close-detail' })
+		expect(closed.detailView).toBeNull()
+	})
+
+	test('answer while detail is open clears detailView', () => {
+		const withDetail = treeReducer(mockInitial, {
+			kind: 'open-detail',
+			operatorName: 'map',
+			oneliner: 'Transform values.',
+			wikiPath: '/operators/map',
+		})
+		const branch = MOCK_ROOT.branches[0]
+		const afterAnswer = treeReducer(withDetail, { kind: 'answer', next: branch.next, label: branch.label })
+		expect(afterAnswer.detailView).toBeNull()
+	})
+
+	test('back while detail is open clears detailView', () => {
+		const afterAnswer = treeReducer(mockInitial, {
+			kind: 'answer',
+			next: MOCK_LEAF,
+			label: 'Answer A',
+		})
+		const withDetail = treeReducer(afterAnswer, {
+			kind: 'open-detail',
+			operatorName: 'of',
+			oneliner: 'Emit values.',
+			wikiPath: '/operators/of',
+		})
+		const afterBack = treeReducer(withDetail, { kind: 'back' })
+		expect(afterBack.detailView).toBeNull()
+	})
 })
