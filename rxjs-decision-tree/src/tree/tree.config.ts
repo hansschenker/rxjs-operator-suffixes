@@ -265,3 +265,145 @@ const ONE: QuestionNode = {
 		{ label: 'Control subscription lifecycle (take, skip, complete when…)', next: LIFECYCLE },
 	],
 }
+
+// ── ④ Many Observables ─────────────────────────────────────────────────────
+const MANY: QuestionNode = {
+	kind: 'question',
+	id: 'many',
+	question: 'What matters most about combining them?',
+	hint: 'Think about whether completion, emission order, or latest values is the goal.',
+	branches: [
+		{
+			label: 'Wait for all to complete, then emit their combined last values',
+			next: leaf('many-forkJoin', [
+				op('forkJoin', 'Wait for all Observables to complete and emit their last values as a combined array.', '/operators/forkJoin'),
+			]),
+		},
+		{
+			label: 'Emit combined latest values whenever any source emits',
+			next: leaf('many-combineLatest', [
+				op('combineLatest', 'Emit the latest value from each source whenever any source emits.', '/operators/combineLatest'),
+			]),
+		},
+		{
+			label: 'Emit from whichever source emits, interleaved',
+			next: leaf('many-merge', [
+				op('merge', 'Subscribe to all sources and emit values as they arrive from any of them.', '/operators/merge'),
+			]),
+		},
+		{
+			label: 'Strict sequence — each starts only when the previous completes',
+			next: leaf('many-concat', [
+				op('concat', 'Subscribe to sources in order — next one starts only when previous completes.', '/operators/concat'),
+			]),
+		},
+		{
+			label: 'Race — use only the fastest source, ignore the rest',
+			next: leaf('many-race', [
+				op('race', 'Subscribe to the first source to emit and unsubscribe from all others.', '/operators/race'),
+			]),
+		},
+		{
+			label: 'Pair values by index position (like a zip file)',
+			next: leaf('many-zip', [
+				op('zip', 'Emit arrays pairing the nth value from each source by emission index.', '/operators/zip'),
+			]),
+		},
+		{
+			label: 'Sample primary stream using secondary stream\'s timing',
+			next: leaf('many-withLatestFrom', [
+				op('withLatestFrom', 'When the primary emits, combine its value with the latest from a secondary stream.', '/operators/withLatestFrom'),
+			]),
+		},
+	],
+}
+
+// ── ⑤ Nested Observable (Observable of Observables) ───────────────────────
+const NESTED: QuestionNode = {
+	kind: 'question',
+	id: 'nested',
+	question: 'Lossy (cancel or ignore some inner Observables) or non-lossy (process all)?',
+	hint: 'Lossy strategies discard inner Observables. Non-lossy strategies process every one.',
+	branches: [
+		{
+			label: 'Lossy — cancel the current inner when a new outer value arrives',
+			next: leaf('nested-switchMap', [
+				op('switchMap', 'Cancel the current inner Observable when a new outer value arrives — only the latest inner runs.', '/operators/switchMap'),
+			]),
+		},
+		{
+			label: 'Lossy — ignore new outer values while an inner Observable is still active',
+			next: leaf('nested-exhaustMap', [
+				op('exhaustMap', 'Ignore new outer values while an inner Observable is still running.', '/operators/exhaustMap'),
+			]),
+		},
+		{
+			label: 'Non-lossy — queue each inner and process them in strict order',
+			next: leaf('nested-concatMap', [
+				op('concatMap', 'Map each outer value to an inner Observable and concatenate — next inner starts only when previous completes.', '/operators/concatMap'),
+			]),
+		},
+		{
+			label: 'Non-lossy — run all inner Observables concurrently',
+			next: leaf('nested-mergeMap', [
+				op('mergeMap', 'Map each outer value to an inner Observable and merge all emissions concurrently.', '/operators/mergeMap'),
+			]),
+		},
+	],
+}
+
+// ── ⑥ Error Handling ───────────────────────────────────────────────────────
+const ERROR: QuestionNode = {
+	kind: 'question',
+	id: 'error',
+	question: 'What should happen when the stream errors?',
+	branches: [
+		{
+			label: 'Recover by switching to a fallback Observable',
+			next: leaf('error-catchError', [
+				op('catchError', 'Intercept an error and replace the failed Observable with a fallback.', '/operators/catchError'),
+			]),
+		},
+		{
+			label: 'Retry the source Observable',
+			next: leaf('error-retry', [
+				op('retry(n)', 'Resubscribe to the source Observable up to n times on error.', '/operators/retry'),
+				op('retryWhen', 'Resubscribe when a notifier Observable emits — enables delay-based retry.', '/operators/retryWhen', false),
+			]),
+		},
+		{
+			label: 'Continue seamlessly with the next Observable on error',
+			next: leaf('error-onErrorResumeNext', [
+				op('onErrorResumeNextWith', 'On error (or completion), continue seamlessly with the next provided Observable.', '/operators/onErrorResumeNextWith'),
+			]),
+		},
+		{
+			label: 'Throw if no value arrives within a time limit',
+			next: leaf('error-timeout', [
+				op('timeout', 'Throw a TimeoutError if the source does not emit within the specified duration.', '/operators/timeout'),
+			]),
+		},
+	],
+}
+
+// ── ⑦ Multicasting / Sharing ───────────────────────────────────────────────
+const MULTICAST: QuestionNode = {
+	kind: 'question',
+	id: 'multicast',
+	question: 'Do late subscribers need to receive a cached value immediately on subscription?',
+	hint: 'Sharing makes multiple subscribers share one source execution instead of each triggering a new one.',
+	branches: [
+		{
+			label: 'Yes — replay the last emitted value to late subscribers',
+			next: leaf('multicast-shareReplay', [
+				op('shareReplay(1)', 'Share the source execution and replay the last emitted value to new subscribers.', '/operators/shareReplay'),
+			]),
+		},
+		{
+			label: 'No — share execution only, no replay needed',
+			next: leaf('multicast-share', [
+				op('share', 'Share the source execution among multiple subscribers — no value replay.', '/operators/share'),
+			]),
+		},
+	],
+}
