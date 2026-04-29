@@ -8,10 +8,10 @@ export const exhaustMapConfig: MarbleDiagramConfig = {
 	source: {
 		emissions: [
 			{ time: 1, label: 'A', color: '#a78bfa', spawnsInnerIndex: 0 },
-			{ time: 2, label: 'B', color: '#94a3b8', spawnsInnerIndex: null },
-			{ time: 3, label: 'C', color: '#94a3b8', spawnsInnerIndex: null },
+			{ time: 2, label: 'B', color: '#34d399', spawnsInnerIndex: null },
+			{ time: 3, label: 'C', color: '#38bdf8', spawnsInnerIndex: null },
 			{ time: 6, label: 'D', color: '#fb923c', spawnsInnerIndex: 1 },
-			{ time: 7, label: 'E', color: '#94a3b8', spawnsInnerIndex: null },
+			{ time: 7, label: 'E', color: '#fbbf24', spawnsInnerIndex: null },
 		],
 		completedAt: 9,
 	},

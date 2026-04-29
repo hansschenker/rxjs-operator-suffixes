@@ -2,6 +2,7 @@
 import type { FirstOrderDiagramConfig } from '../marble.types'
 export const everyConfig: FirstOrderDiagramConfig = {
 	operatorName: 'every',
+	title: 'every — result emits single boolean at completion (simplified)',
 	totalTime: 10,
 	source: {
 		values: [
