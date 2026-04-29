@@ -1,6 +1,7 @@
 // src/ui/panel.ts
 import { action$ } from '../state/tree.state'
 import { renderDetail } from './detail'
+import { escHtml } from './utils'
 import type { TreeState, LeafNode, QuestionNode, OperatorResult } from '../tree/tree.types'
 
 export function renderPanel(container: HTMLElement, state: TreeState): void {
@@ -66,7 +67,7 @@ function renderQuestion(
 function renderOperator(op: OperatorResult): string {
 	const detailBtn = `<button class="op-detail-btn"
 		data-name="${op.name}"
-		data-oneliner="${op.oneliner.replace(/"/g, '&quot;')}"
+		data-oneliner="${escHtml(op.oneliner)}"
 		data-wiki="${op.wikiPath}">
 		${op.primary ? '★ ' : ''}${op.name}
 	</button>`
@@ -108,9 +109,9 @@ function renderLeaf(
 			const el = btn as HTMLButtonElement
 			action$.next({
 				kind:         'open-detail',
-				operatorName: el.dataset['name']!,
-				oneliner:     el.dataset['oneliner']!,
-				wikiPath:     el.dataset['wiki']!,
+				operatorName: el.dataset['name']     ?? '',
+				oneliner:     el.dataset['oneliner'] ?? '',
+				wikiPath:     el.dataset['wiki']     ?? '',
 			})
 		})
 	})

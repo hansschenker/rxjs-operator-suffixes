@@ -3,6 +3,7 @@ import { action$ } from '../state/tree.state'
 import { getMarbleSVG } from '../marble/configs/index'
 import { explanations } from '../data/explanations'
 import { WIKI_BASE } from '../tree/tree.config'
+import { escHtml } from './utils'
 import type { DetailView } from '../tree/tree.types'
 
 export function renderDetail(container: HTMLElement, detail: DetailView): void {
@@ -62,14 +63,6 @@ export function renderDetail(container: HTMLElement, detail: DetailView): void {
 	container.querySelector('#detail-back-btn')?.addEventListener('click', () => {
 		action$.next({ kind: 'close-detail' })
 	})
-}
-
-function escHtml(str: string): string {
-	return str
-		.replace(/&/g, '&amp;')
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;')
-		.replace(/"/g, '&quot;')
 }
 
 function markdownTable(md: string): string {

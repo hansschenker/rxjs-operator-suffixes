@@ -3,10 +3,10 @@
 // Re-generate with: npx tsx scripts/extract-explanations.ts
 
 export interface OperatorExplanation {
-	code:    string
-	gotchas: string[]
-	related: string
-	rule:    string
+	code?:    string
+	gotchas?: string[]
+	related?: string
+	rule?:    string
 }
 
 export const explanations: Record<string, OperatorExplanation> = {
