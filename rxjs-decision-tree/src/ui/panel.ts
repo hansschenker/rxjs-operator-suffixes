@@ -1,11 +1,15 @@
 // src/ui/panel.ts
-import { WIKI_BASE } from '../tree/tree.config'
 import { action$ } from '../state/tree.state'
+import { renderDetail } from './detail'
 import type { TreeState, LeafNode, QuestionNode, OperatorResult } from '../tree/tree.types'
 
 export function renderPanel(container: HTMLElement, state: TreeState): void {
-	const { currentNode, breadcrumb, history } = state
+	if (state.detailView) {
+		renderDetail(container, state.detailView)
+		return
+	}
 
+	const { currentNode, breadcrumb, history } = state
 	if (currentNode.kind === 'question') {
 		renderQuestion(container, currentNode, breadcrumb, history.length)
 	} else {
@@ -59,23 +63,25 @@ function renderQuestion(
 	})
 }
 
-function renderOperator(op: OperatorResult, primary: boolean): string {
-	const href = `${WIKI_BASE}${op.wikiPath}`
-	if (primary) {
+function renderOperator(op: OperatorResult): string {
+	const detailBtn = `<button class="op-detail-btn"
+		data-name="${op.name}"
+		data-oneliner="${op.oneliner.replace(/"/g, '&quot;')}"
+		data-wiki="${op.wikiPath}">
+		${op.primary ? '★ ' : ''}${op.name}
+	</button>`
+
+	if (op.primary) {
 		return `
 			<div class="result-primary">
-				<div class="op-name">${op.name}</div>
+				${detailBtn}
 				<div class="op-oneliner">${op.oneliner}</div>
-				<a class="wiki-link" href="${href}" target="_blank" rel="noopener">
-					Learn more in the RxJS wiki →
-				</a>
 			</div>`
 	}
 	return `
 		<div class="result-alt">
-			<span class="alt-name">${op.name}</span>
+			${detailBtn}
 			<span class="alt-desc">— ${op.oneliner}</span>
-			<a class="alt-link" href="${href}" target="_blank" rel="noopener">Wiki →</a>
 		</div>`
 }
 
@@ -86,7 +92,7 @@ function renderLeaf(
 	historyLen: number,
 ): void {
 	const bc = renderBreadcrumb(breadcrumb, '✓ Result', 'result')
-	const ops = node.operators.map(op => renderOperator(op, op.primary)).join('')
+	const ops = node.operators.map(op => renderOperator(op)).join('')
 
 	container.innerHTML = `
 		${bc}
@@ -96,6 +102,18 @@ function renderLeaf(
 			<button class="nav-btn" id="reset-btn">↺ Start over</button>
 		</div>
 	`
+
+	container.querySelectorAll('.op-detail-btn').forEach(btn => {
+		btn.addEventListener('click', () => {
+			const el = btn as HTMLButtonElement
+			action$.next({
+				kind:         'open-detail',
+				operatorName: el.dataset['name']!,
+				oneliner:     el.dataset['oneliner']!,
+				wikiPath:     el.dataset['wiki']!,
+			})
+		})
+	})
 
 	container.querySelector('#back-btn')?.addEventListener('click', () => {
 		action$.next({ kind: 'back' })
