@@ -19,7 +19,7 @@ function extractSection(content: string, heading: string): string {
 }
 
 function extractCode(content: string): string {
-	const section = extractSection(content, 'Primary Code Sample')
+	const section = extractSection(content, 'Code Example')
 	const match = section.match(/```typescript\n([\s\S]*?)```/)
 	return (match?.[1] ?? '').trim()
 }

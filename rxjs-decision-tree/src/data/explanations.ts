@@ -11,7 +11,7 @@ export interface OperatorExplanation {
 
 export const explanations: Record<string, OperatorExplanation> = {
 	"AsyncSubject": {
-		"code": "",
+		"code": "import { AsyncSubject } from 'rxjs'\nimport { ajax } from 'rxjs/ajax'\n\ninterface Config {\n\tapiUrl: string\n\tfeatureFlags: Record<string, boolean>\n}\n\n// Load config once; all subscribers — whenever they subscribe — get the same result\nconst config$ = new AsyncSubject<Config>()\n\najax.getJSON<Config>('/config.json').subscribe({\n\tnext: (config: Config) => config$.next(config),\n\terror: (err: unknown) => config$.error(err),\n\tcomplete: () => config$.complete()\n})\n\n// Any number of consumers, subscribing at any time\nconfig$.subscribe((config: Config) => {\n\tconsole.log('Component A got config:', config.apiUrl)\n})\n\n// Subscribe later — still receives the cached result immediately\nsetTimeout(() => {\n\tconfig$.subscribe((config: Config) => {\n\t\tconsole.log('Component B got config (late):', config.apiUrl)\n\t})\n}, 2000)",
 		"gotchas": [
 			"**Nothing emits until `.complete()` is called** — this is the most common pitfall. If you forget to call `.complete()` after the final `.next()`, all subscribers wait forever. Ensure the completion path is always reached, including in error scenarios.",
 			"**Error before completion propagates immediately** — calling `.error(err)` propagates the error to all current subscribers immediately, without emitting the buffered last value. Error and completion are mutually exclusive.",
@@ -23,7 +23,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `AsyncSubject` when you need to **multicast a single final result to subscribers who may arrive before or after completion** — the Subject equivalent of a resolved Promise. Prefer `shareReplay(1)` when multicasting an existing Observable pipeline rather than pushing imperatively."
 	},
 	"audit": {
-		"code": "",
+		"code": "import { fromEvent } from 'rxjs'\nimport { audit, map } from 'rxjs/operators'\nimport { timer } from 'rxjs'\n\ninterface ProgressEvent {\n\tloaded: number\n\ttotal: number\n\tpayloadSizeKb: number\n}\n\n// Rate-limit upload progress events — large payloads update the UI less frequently\nconst progress$ = fromEvent<ProgressEvent>(uploader, 'progress').pipe(\n\taudit((e: ProgressEvent) => {\n\t\t// Large payloads: sample every 500 ms; small: every 100 ms\n\t\tconst interval = e.payloadSizeKb > 500 ? 500 : 100\n\t\treturn timer(interval)\n\t}),\n\tmap((e: ProgressEvent) => Math.round((e.loaded / e.total) * 100))\n)\n\nprogress$.subscribe((pct: number) => updateProgressBar(pct))",
 		"gotchas": [
 			"**`audit` vs `throttle`** — `throttle` emits the *first* value in a window (leading); `audit` emits the *last* (trailing). Use `throttle` when you need a guaranteed immediate reaction; use `audit` when you want the most recent value at the end of the window.",
 			"**`audit` vs `debounce`** — `debounce` resets the window on every new value (stream must go quiet); `audit` opens the window on the first value and emits the latest at the end of a fixed interval regardless of subsequent activity. Use `debounce` for \"wait until settled\"; use `audit` for \"sample latest on a timer\".",
@@ -35,7 +35,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `audit` when you want the **most recent value at the end of a dynamic window** opened by each source emission. Use `auditTime` when the window duration is constant. Use `throttle` when you need the first value rather than the last."
 	},
 	"auditTime": {
-		"code": "",
+		"code": "import { fromEvent } from 'rxjs'\nimport { auditTime, map } from 'rxjs/operators'\n\ninterface ScrollPosition {\n\tx: number\n\ty: number\n}\n\n// Sample scroll position every 100 ms — always get the latest position, not the first\nconst scroll$ = fromEvent(window, 'scroll').pipe(\n\tauditTime(100),\n\tmap((): ScrollPosition => ({\n\t\tx: window.scrollX,\n\t\ty: window.scrollY\n\t}))\n)\n\nscroll$.subscribe((pos: ScrollPosition) => updateScrollIndicator(pos))",
 		"gotchas": [
 			"**`auditTime` vs `throttleTime`** — `throttleTime` emits the *first* value in the window (leading emission, immediate response); `auditTime` emits the *last* (trailing). Use `throttleTime` when you need a guaranteed immediate reaction; use `auditTime` when the final settled value matters more than immediate response.",
 			"**`auditTime` vs `debounceTime`** — `debounceTime` resets its window on every new value (source must go quiet before emitting); `auditTime` opens the window on the first value in each period and emits regardless of subsequent activity after `duration` ms. Use `debounceTime` for \"wait until settled\"; use `auditTime` for \"sample latest every N ms\".",
@@ -47,7 +47,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `auditTime` when you want the **most recent value at the end of each fixed time window**. Use `throttleTime` for the first value, `debounceTime` for the settled value, and `audit` when the window duration must vary per value."
 	},
 	"BehaviorSubject": {
-		"code": "",
+		"code": "import { BehaviorSubject, combineLatest } from 'rxjs'\nimport { map, distinctUntilChanged, shareReplay } from 'rxjs/operators'\n\ninterface User {\n\tid: number\n\tname: string\n\trole: 'admin' | 'user'\n}\n\ninterface AppState {\n\tuser: User | null\n\tloading: boolean\n\terror: string | null\n}\n\n// State container\nconst state$ = new BehaviorSubject<AppState>({\n\tuser: null,\n\tloading: false,\n\terror: null\n})\n\n// Pure updater function — never mutate state directly\nfunction updateState(updater: (s: AppState) => AppState): void {\n\tstate$.next(updater(state$.value))\n}\n\n// Derived selectors — only emit when their slice changes\nconst user$ = state$.pipe(\n\tmap((s: AppState) => s.user),\n\tdistinctUntilChanged(),\n\tshareReplay(1)\n)\n\nconst isAdmin$ = user$.pipe(\n\tmap((u: User | null) => u?.role === 'admin' ?? false),\n\tdistinctUntilChanged()\n)\n\n// Read current value synchronously (for non-reactive code)\nfunction getCurrentUser(): User | null {\n\treturn state$.value.user\n}\n\n// Update state\nupdateState((s) => ({ ...s, loading: true }))",
 		"gotchas": [
 			"**`.value` is synchronous and bypasses the reactive graph** — reading `subject.value` directly in reactive code breaks the reactive data flow. Prefer subscribing via `pipe(map(...))` for derived values; reserve `.value` for bridging to imperative code.",
 			"**`distinctUntilChanged()` is essential on derived streams** — `BehaviorSubject` re-emits on every `.next()`, even if the value didn't change. Always add `distinctUntilChanged()` (or `distinctUntilKeyChanged`) on derived selectors to prevent spurious downstream emissions.",
@@ -59,7 +59,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `BehaviorSubject` when you need a **state container with a current value** that any subscriber can read at any time. Use plain `Subject` for action dispatchers where current-value semantics are not needed."
 	},
 	"buffer": {
-		"code": "",
+		"code": "import { fromEvent, Subject } from 'rxjs'\nimport { buffer, filter } from 'rxjs/operators'\n\ninterface ClickEvent {\n\tx: number\n\ty: number\n\ttimestamp: number\n}\n\n// Collect all clicks; flush and process when the \"submit\" button is pressed\nconst click$ = fromEvent<MouseEvent>(document, 'click').pipe(\n\tmap((e: MouseEvent): ClickEvent => ({\n\t\tx: e.clientX,\n\t\ty: e.clientY,\n\t\ttimestamp: Date.now()\n\t}))\n)\n\nconst submitClick$ = fromEvent(submitButton, 'click')\n\nconst clickBatch$ = click$.pipe(buffer(submitClick$))\n\nclickBatch$.subscribe((clicks: ClickEvent[]) => {\n\tconsole.log(`Flushed ${clicks.length} clicks`)\n\tanalyseClickPattern(clicks)\n})",
 		"gotchas": [
 			"**Empty buffers are emitted** — if the notifier fires when no source values have arrived, `buffer` emits an empty array `[]`. Filter these with `.pipe(filter(b => b.length > 0))` if empty batches are noise.",
 			"**`buffer` vs `bufferTime`** — `bufferTime(ms)` is a fixed-interval shorthand; `buffer(notifier$)` allows event-driven boundaries. Use `bufferTime` for periodic batching; use `buffer` when the flush signal is external or irregular.",
@@ -71,7 +71,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `buffer` when the **batch boundary is an external event-driven signal**. Use `bufferTime` for a fixed-rate clock, `bufferCount` for fixed-size batches, and `window` when you need to apply operators to each batch as a stream."
 	},
 	"bufferCount": {
-		"code": "",
+		"code": "import { from } from 'rxjs'\nimport { bufferCount, mergeMap } from 'rxjs/operators'\nimport { ajax } from 'rxjs/ajax'\n\ninterface Record {\n\tid: number\n\tdata: string\n}\n\ninterface BulkResponse {\n\tinserted: number\n}\n\n// Batch upload — send 50 records per API call\nconst records$ = from(largeRecordArray as Record[])\n\nconst upload$ = records$.pipe(\n\tbufferCount(50),\n\tmergeMap((batch: Record[]) =>\n\t\tajax.post<BulkResponse>('/api/bulk', { records: batch })\n\t)\n)\n\nupload$.subscribe((res) => console.log(`Inserted: ${res.response.inserted}`))",
 		"gotchas": [
 			"**Partial final buffer on source completion** — when the source completes and fewer than `bufferSize` values remain, a partial array is emitted. If you need only complete full-size batches, filter with `.pipe(filter(b => b.length === bufferSize))`.",
 			"**`startBufferEvery > bufferSize` drops values** — this is the only case where `bufferCount` is lossy. Values that fall in the gap between a buffer end and the next buffer start do not appear in any emitted array.",
@@ -83,7 +83,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `bufferCount` when you need **fixed-size batches** of source values. Use `startBufferEvery` for overlapping (sliding) windows. Use `bufferTime` for time-based batches and `buffer` for event-driven batch boundaries."
 	},
 	"bufferTime": {
-		"code": "",
+		"code": "import { Subject } from 'rxjs';\nimport { bufferTime, filter, switchMap } from 'rxjs/operators';\nimport { ajax } from 'rxjs/ajax';\n\ninterface LogEntry {\n\tlevel: 'info' | 'warn' | 'error';\n\tmessage: string;\n\ttimestamp: number;\n}\n\n// Scenario: client-side log batching — accumulate log events for 2 seconds,\n// then POST the batch to a logging endpoint in one request.\n\nconst logEvent$ = new Subject<LogEntry>();\n\nconst batchedLogs$ = logEvent$.pipe(\n\tbufferTime(2000),\n\tfilter((batch: LogEntry[]): batch is LogEntry[] => batch.length > 0),\n\tswitchMap((batch: LogEntry[]) =>\n\t\tajax({\n\t\t\turl: '/api/logs',\n\t\t\tmethod: 'POST',\n\t\t\theaders: { 'Content-Type': 'application/json' },\n\t\t\tbody: { entries: batch },\n\t\t})\n\t),\n);\n\nbatchedLogs$.subscribe({\n\tnext: () => { /* batch acknowledged */ },\n\terror: (err: unknown) => console.error('Log batch failed:', err),\n});\n\n// Emit log entries from anywhere in the app\nlogEvent$.next({ level: 'info', message: 'Page loaded', timestamp: Date.now() });",
 		"gotchas": [
 			"**Empty arrays are emitted for silent windows** — unlike `sampleTime` (which skips silent periods), `bufferTime` always emits an array at each window boundary, even if it's `[]`. Forgetting to `filter(batch => batch.length > 0)` before processing will send empty batches to your API or reducer — a very common bug.",
 			"**`bufferTime` vs `windowTime` — arrays vs streams** — both collect values by time window, but `bufferTime` emits a closed `T[]` array after each window ends, while `windowTime` emits a live `Observable<T>` when each window opens. Use `bufferTime` when you need the complete collection at once; use `windowTime` when you need to react to values incrementally within the window.",
@@ -95,7 +95,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `bufferTime` when you need to **batch all source values into arrays** over a fixed time span for bulk processing (API writes, batch renders, analytics). Prefer `windowTime` instead when you need **a live sub-stream per window** so you can apply further operators inside each window incrementally."
 	},
 	"bufferToggle": {
-		"code": "",
+		"code": "import { fromEvent, Subject } from 'rxjs'\nimport { bufferToggle, map } from 'rxjs/operators'\nimport { timer } from 'rxjs'\n\ninterface MousePosition {\n\tx: number\n\ty: number\n}\n\n// Record mouse movements only while the mouse button is held down\nconst mouseMove$ = fromEvent<MouseEvent>(document, 'mousemove').pipe(\n\tmap((e: MouseEvent): MousePosition => ({ x: e.clientX, y: e.clientY }))\n)\n\nconst mouseDown$ = fromEvent<MouseEvent>(document, 'mousedown')\nconst mouseUp$   = fromEvent<MouseEvent>(document, 'mouseup')\n\nconst drag$ = mouseMove$.pipe(\n\tbufferToggle(mouseDown$, () => mouseUp$)\n)\n\ndrag$.subscribe((positions: MousePosition[]) => {\n\tconsole.log(`Drag captured ${positions.length} positions`)\n\tdrawPath(positions)\n})",
 		"gotchas": [
 			"**Values outside open windows are discarded** — unlike `buffer` (which collects everything between notifier ticks), `bufferToggle` only collects values while a window is explicitly open. Values that arrive when no window is active are permanently lost. This is intentional — if you need all values, use `buffer` instead.",
 			"**Overlapping windows produce duplicate values** — if multiple windows are open simultaneously, the same source value will appear in all open windows. This is the feature, not a bug: `bufferToggle` is the standard way to create overlapping windows.",
@@ -107,7 +107,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `bufferToggle` when windows need **explicit, independent open and close signals** — especially for overlapping windows or when the window duration depends on what triggered the opening. Use `buffer` for simpler non-overlapping event-driven batches."
 	},
 	"bufferWhen": {
-		"code": "",
+		"code": "import { fromEvent } from 'rxjs'\nimport { bufferWhen, filter, map } from 'rxjs/operators'\nimport { timer } from 'rxjs'\n\ninterface LogEntry {\n\tlevel: 'info' | 'warn' | 'error'\n\tmessage: string\n}\n\n// Collect log entries; flush every 1–3 seconds (random back-off simulation)\nconst log$ = new Subject<LogEntry>()\n\nconst flushed$ = log$.pipe(\n\tbufferWhen(() => timer(1000 + Math.random() * 2000)),\n\tfilter((batch: LogEntry[]) => batch.length > 0)\n)\n\nflushed$.subscribe((entries: LogEntry[]) => {\n\tconsole.log(`Flushing ${entries.length} log entries`)\n\tsendToLogServer(entries)\n})",
 		"gotchas": [
 			"**`bufferWhen` vs `buffer`** — `buffer(notifier$)` subscribes to the notifier once and uses it for all windows; `bufferWhen(() => ...)` calls the factory function afresh for each new window. Use `bufferWhen` when the closing Observable is stateful, one-shot, or must vary between windows.",
 			"**`bufferWhen` vs `bufferToggle`** — `bufferWhen` produces non-overlapping sequential windows with no opening signal (windows open immediately after the previous closes); `bufferToggle` supports overlapping windows with separate opening and closing signals. Use `bufferWhen` for sequential adaptive batching; `bufferToggle` for overlapping or gated windows.",
@@ -119,7 +119,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `bufferWhen` when the **closing Observable must be recreated for each window** — for adaptive, stateful, or one-shot window boundaries. Use `buffer(notifier$)` when the same stateless notifier can be reused across all windows."
 	},
 	"catchError": {
-		"code": "import { Observable, catchError, of, timer, defer, switchMap } from 'rxjs'\n\n// Scenario: fallback value on failure — API failure yields cached data, stream continues\ninterface Data {\n\titems: string[]\n}\n\nconst cached: Data = { items: ['cached-a', 'cached-b'] }\n\ndeclare function fetchData(): Observable<Data>\n\nconst data$: Observable<Data> = fetchData().pipe(\n\tcatchError((err: unknown): Observable<Data> => {\n\t\tconsole.warn('fetchData failed, using cache:', err)\n\t\treturn of(cached)\n\t})\n)",
+		"code": "",
 		"gotchas": [
 			"**Place `catchError` inside `switchMap`/`mergeMap`, not outside** — an error in the outer pipeline terminates it permanently. Wrap just the inner Observable to keep the effect alive for subsequent actions.",
 			"**`err` is `unknown`, not `Error`** — use `instanceof Error` or type narrowing. Don't blindly access `.message`.",
@@ -131,7 +131,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `catchError` when you want to **turn an error into a new stream** — fallback, transform, or rethrow with context. Prefer `retry` when you want to re-subscribe to the same source, or `finalize` when you only need cleanup."
 	},
 	"combineLatest": {
-		"code": "",
+		"code": "import { combineLatest, BehaviorSubject } from 'rxjs'\nimport { map, startWith, debounceTime } from 'rxjs/operators'\n\ninterface Musician { id: number; name: string; genre: string }\ninterface FilterState { query: string; genre: string }\n\n// Two independent state streams\nconst musicians$ = new BehaviorSubject<Musician[]>([])\nconst filter$ = new BehaviorSubject<FilterState>({ query: '', genre: '' })\n\n// Derived view-model: re-computed whenever musicians OR filter changes\nconst filteredMusicians$ = combineLatest([musicians$, filter$]).pipe(\n\tmap(([musicians, filter]: [Musician[], FilterState]) =>\n\t\tmusicians.filter(m =>\n\t\t\tm.name.toLowerCase().includes(filter.query.toLowerCase()) &&\n\t\t\t(filter.genre === '' || m.genre === filter.genre)\n\t\t)\n\t)\n)\n\n// In an MVU effect pipeline — sample both streams when a save action fires\nimport { Subject } from 'rxjs'\nimport { withLatestFrom, exhaustMap } from 'rxjs/operators'\n\nconst save$ = new Subject<void>()\n\n// Note: for \"sample on trigger\", prefer withLatestFrom over combineLatest\nconst saveEffect$ = save$.pipe(\n\twithLatestFrom(combineLatest([musicians$, filter$])),\n\texhaustMap(([_, [musicians, filter]]) =>\n\t\tsaveToApi(musicians, filter)\n\t)\n)",
 		"gotchas": [
 			"**Startup stall — no emission until all sources have emitted** — If one source is slow or never emits (e.g. an HTTP request that errors), the combined Observable produces nothing. Protect with `startWith(null)` or an initial value on optional streams.",
 			"**BehaviorSubject sources emit immediately** — Combining `BehaviorSubject` streams causes an immediate synchronous emission on subscription. This is usually desirable for state, but can surprise you if you expect a delay.",
@@ -143,7 +143,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `combineLatest` when you need a **continuously updated snapshot** of several independent streams — any change to any input should re-derive the output. Prefer `withLatestFrom` instead when only one stream drives the logic and the others are read as current state."
 	},
 	"combineLatestAll": {
-		"code": "",
+		"code": "import { from } from 'rxjs'\nimport { map, combineLatestAll } from 'rxjs/operators'\nimport { ajax } from 'rxjs/ajax'\n\ninterface Endpoint { url: string; label: string }\n\nconst endpointList: Endpoint[] = [\n\t{ url: '/api/users', label: 'users' },\n\t{ url: '/api/posts', label: 'posts' },\n\t{ url: '/api/tags',  label: 'tags'  },\n]\n\n// from() completes after emitting all three — satisfies the outer-complete requirement\nconst combined$ = from(endpointList).pipe(\n\tmap((e: Endpoint) => ajax.getJSON<unknown>(e.url)),\n\tcombineLatestAll()\n)\n\n// Emits [usersResponse, postsResponse, tagsResponse] and continues\n// updating whenever any endpoint re-emits (if using polling Observables)\ncombined$.subscribe((results: unknown[]) => {\n\tendpointList.forEach((e, i) => console.log(e.label, results[i]))\n})",
 		"gotchas": [
 			"**Outer must complete — an infinite outer means no emissions ever** — If the outer Observable never completes (e.g. a `Subject` that keeps emitting new inner Observables), `combineLatestAll` will never emit. Ensure the outer completes with `take(n)`, `first()`, or `from([...])`.",
 			"**Late-arriving inners reset the \"all-emitted\" gate** — Each new inner that arrives before the outer completes adds a new slot. Every existing slot must re-emit (or already have a cached latest value) for the combined output to fire. If inner Observables are slow starters, the startup delay compounds.",
@@ -155,7 +155,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `combineLatestAll` when the **set of sources is determined at runtime** and you need a continuously updated combined snapshot once that set is known. Prefer the static `combineLatest([...])` when sources are fixed at composition time — it is simpler and has no outer-completion requirement."
 	},
 	"combineLatestWith": {
-		"code": "",
+		"code": "import { fromEvent, BehaviorSubject } from 'rxjs'\nimport { combineLatestWith, map, distinctUntilChanged } from 'rxjs/operators'\n\ninterface AppState { theme: 'light' | 'dark'; locale: string }\n\nconst state$ = new BehaviorSubject<AppState>({ theme: 'light', locale: 'en' })\nconst windowResize$ = fromEvent<UIEvent>(window, 'resize')\n\n// Stays in pipe() — no need to lift out to a top-level combineLatest\nconst layout$ = windowResize$.pipe(\n\tcombineLatestWith(state$),\n\tmap(([event, state]: [UIEvent, AppState]) => ({\n\t\twidth: (event.target as Window).innerWidth,\n\t\ttheme: state.theme,\n\t\tlocale: state.locale,\n\t})),\n\tdistinctUntilChanged(\n\t\t(a, b) => a.width === b.width && a.theme === b.theme && a.locale === b.locale\n\t)\n)\n\nlayout$.subscribe(layout => render(layout))",
 		"gotchas": [
 			"**Re-emits on every source change, including non-trigger sources** — Unlike `withLatestFrom`, `combineLatestWith` fires whenever *any* of its sources emits. If `currentUser$` above emits mid-effect, a duplicate pipeline run starts. Use `withLatestFrom` when you have a clear primary trigger and want to only *read* the other streams.",
 			"**Tuple type is readonly** — The emitted `[T, ...A]` is `Readonly<[T, ...A]>`. Destructuring works fine, but passing it to a function expecting a mutable tuple requires casting. This is a RxJS 7 type-safety improvement — don't fight it.",
@@ -166,7 +166,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `combineLatestWith` when you're already inside a `pipe()` chain and need to merge in additional streams reactively. Prefer `withLatestFrom` when only one stream should trigger emissions and the rest are state to be sampled."
 	},
 	"concat": {
-		"code": "",
+		"code": "import { concat, of } from 'rxjs'\nimport { ajax } from 'rxjs/ajax'\nimport { map } from 'rxjs/operators'\n\ninterface AppState {\n\tstatus: 'loading' | 'ready'\n\tdata: string[]\n}\n\n// Emit a loading state immediately, then the real data once fetched\nconst state$ = concat(\n\tof<AppState>({ status: 'loading', data: [] }),\n\tajax.getJSON<string[]>('/api/items').pipe(\n\t\tmap((data: string[]): AppState => ({ status: 'ready', data }))\n\t)\n)\n\nstate$.subscribe((state: AppState) => render(state))",
 		"gotchas": [
 			"**Any non-completing source blocks all subsequent sources** — if the first source is a `Subject`, `interval()`, or any other infinite Observable, the second source is never subscribed to. Always ensure each source in a `concat` will eventually complete.",
 			"**`concat` is a static function, not a pipeable operator** — use `concatWith` for the pipeable equivalent inside a `pipe()` chain.",
@@ -177,7 +177,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `concat` when sources must execute **sequentially** and each prior source must complete before the next starts. Prefer `merge` when order does not matter and you want parallel execution."
 	},
 	"concatAll": {
-		"code": "",
+		"code": "import { of, interval } from 'rxjs'\nimport { map, concatAll, take } from 'rxjs/operators'\n\n// Run three timer sequences one after another\nconst sequences$ = of(3, 2, 1).pipe(\n\tmap((count: number) =>\n\t\tinterval(500).pipe(\n\t\t\ttake(count),\n\t\t\tmap((i: number) => `seq-${count}: tick ${i}`)\n\t\t)\n\t)\n)\n\n// concatAll subscribes to each inner only after the previous completes\nsequences$.pipe(concatAll()).subscribe((msg: string) => console.log(msg))\n// seq-3: tick 0\n// seq-3: tick 1\n// seq-3: tick 2\n// seq-2: tick 0  ← starts only after seq-3 finishes\n// ...",
 		"gotchas": [
 			"**`concatAll` = `concatMap(x => x)`** — `concatMap` is the idiomatic shorthand. Use `concatAll` only when you already have a higher-order Observable and do not need an explicit projection.",
 			"**Blocking inner stalls the entire queue** — if any inner Observable never completes, all subsequent inners in the queue are never subscribed to. This is the same pitfall as `concat` but harder to spot since the inner is produced dynamically.",
@@ -188,7 +188,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `concatAll` when you already hold a higher-order Observable and need **all inners to execute sequentially** in order. Prefer `concatMap` when you can project and flatten in one step."
 	},
 	"concatMap": {
-		"code": "",
+		"code": "import { fromEvent } from 'rxjs'\nimport { concatMap, map } from 'rxjs/operators'\nimport { ajax } from 'rxjs/ajax'\n\ninterface CartItem {\n\tid: number\n\tname: string\n}\n\n// Each \"Add to cart\" click sends a request; requests are serialised in click order\nconst addToCart$ = fromEvent<MouseEvent>(\n\tdocument.querySelectorAll('.add-btn'),\n\t'click'\n).pipe(\n\tmap((e: MouseEvent) => Number((e.currentTarget as HTMLElement).dataset['itemId'])),\n\tconcatMap((id: number) =>\n\t\tajax.post<CartItem>('/api/cart', { itemId: id }).pipe(\n\t\t\tmap((res) => res.response)\n\t\t)\n\t)\n)\n\naddToCart$.subscribe((item: CartItem) => {\n\tconsole.log('Added to cart:', item)\n})",
 		"gotchas": [
 			"**Back-pressure builds up silently** — if the source emits faster than inner Observables complete, the internal queue grows unboundedly. Unlike `switchMap` or `exhaustMap`, `concatMap` never drops values; a flooded queue can exhaust memory. Consider adding `throttle` or `debounce` upstream if the source is high-frequency.",
 			"**Any non-completing inner blocks all subsequent values** — if a projected inner Observable never completes (e.g. a `Subject` without a `take`), all subsequent source values remain queued forever. Always ensure inner Observables complete.",
@@ -199,7 +199,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `concatMap` when every source value must be processed **in the exact order it was emitted** and each inner must complete before the next starts. Prefer `mergeMap` for parallel execution, `switchMap` when only the latest matters, and `exhaustMap` when new values should be ignored while busy."
 	},
 	"concatMapTo": {
-		"code": "",
+		"code": "// Deprecated — do not use in new code\nimport { fromEvent } from 'rxjs'\nimport { concatMapTo } from 'rxjs/operators'\n\nconst result$ = fromEvent(document.getElementById('btn')!, 'click').pipe(\n\tconcatMapTo(runStep$())\n)\n\n// Preferred replacement\nimport { fromEvent } from 'rxjs'\nimport { concatMap } from 'rxjs/operators'\n\nconst result$ = fromEvent(document.getElementById('btn')!, 'click').pipe(\n\tconcatMap(() => runStep$())\n)",
 		"gotchas": [
 			"**Deprecated in RxJS 7, removed in RxJS 8** — do not use in new code. Migrate all existing uses to `concatMap(() => inner$)`.",
 			"**Cold Observable creates a new execution per source value** — if `innerObservable` is cold (e.g. an HTTP request), each source emission queues a separate independent execution of that Observable."
@@ -208,7 +208,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Do **not** use `concatMapTo` in new code. Replace all occurrences with `concatMap(() => innerObservable)`."
 	},
 	"concatWith": {
-		"code": "",
+		"code": "import { of, EMPTY } from 'rxjs'\nimport { concatWith, map, finalize } from 'rxjs/operators'\nimport { ajax } from 'rxjs/ajax'\n\ninterface Status {\n\tphase: 'data' | 'done'\n\tvalue?: string\n}\n\n// Fetch data, then emit a 'done' sentinel value\nconst result$ = ajax.getJSON<string[]>('/api/items').pipe(\n\tmap((items: string[]): Status => ({ phase: 'data', value: items.join(', ') })),\n\tconcatWith(of<Status>({ phase: 'done' }))\n)\n\nresult$.subscribe((status: Status) => {\n\tif (status.phase === 'done') {\n\t\tconsole.log('Stream complete')\n\t} else {\n\t\tconsole.log('Data:', status.value)\n\t}\n})",
 		"gotchas": [
 			"**RxJS 7+ only** — `concatWith` does not exist in RxJS 6. For RxJS 6 compatibility, use the static `concat(source$, other$)` creation function.",
 			"**Piped source must complete** — if the source Observable is infinite (e.g. a live `Subject`), the `otherSources` are never subscribed to. This is the same pitfall as `concat` but can be less obvious inside a pipeline.",
@@ -218,7 +218,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `concatWith` when you want to **append another stream after the source inside a `pipe()` chain** (RxJS 7+) with strict sequential ordering. Prefer the static `concat` when combining at the top level or supporting RxJS 6."
 	},
 	"connect": {
-		"code": "import { of, tap, connect, merge, map, filter, Observable } from 'rxjs'\n\n// Scenario: fan-out with synchronous source — one subscription, multiple derived branches\nconst source$: Observable<number> = of(1, 2, 3, 4, 5).pipe(\n\ttap((n: number): void => console.log('source:', n))   // fires exactly ONCE per value\n)\n\nconst labelled$: Observable<string> = source$.pipe(\n\tconnect((shared$: Observable<number>): Observable<string> => merge(\n\t\tshared$.pipe(map((n: number): string => `all:${n}`)),\n\t\tshared$.pipe(filter((n: number): boolean => n % 2 === 0), map((n: number): string => `even:${n}`)),\n\t\tshared$.pipe(filter((n: number): boolean => n % 2 === 1), map((n: number): string => `odd:${n}`))\n\t))\n)\n\nlabelled$.subscribe((v: string): void => console.log(v))\n// 'source:' logs 5 times, not 15 times",
+		"code": "",
 		"gotchas": [
 			"**`connect` vs `share` — synchronicity matters** — for synchronous sources, `connect` guarantees one subscription; `share` (default refcount) does not, because refcount bounces during synchronous setup. Use `connect` for multi-branch fan-out of synchronous sources.",
 			"**The selector runs lazily on subscribe** — the selector function is invoked once per subscriber to the `connect` result. For a truly shared session across subscribers, put `shareReplay(1)` *after* `connect`.",
@@ -230,7 +230,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `connect` when you want to **fan out one source subscription into multiple branches inside a selector** — especially with synchronous sources where `share` would fail. Prefer `share`/`shareReplay` for general async multicasting."
 	},
 	"count": {
-		"code": "import { interval, fromEvent, takeUntil, count, Observable } from 'rxjs'\n\n// Scenario: emission cardinality — how many clicks in the first 5 seconds?\nconst seconds$: Observable<number> = interval(1000)\nconst clicks$: Observable<Event> = fromEvent(document, 'click')\nconst clicksInFiveSec$: Observable<Event> = clicks$.pipe(\n\ttakeUntil(interval(5000))\n)\nconst clickCount$: Observable<number> = clicksInFiveSec$.pipe(count())\n\nclickCount$.subscribe((n: number): void => console.log('clicks in 5s:', n))",
+		"code": "",
 		"gotchas": [
 			"**Never emits on infinite sources** — must see source completion. Pair with a terminator.",
 			"**Counter is O(1) but source may not be** — `count` itself uses constant memory, but holding a long chain of held-by-reference source values may grow upstream. Usually not a concern.",
@@ -241,7 +241,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `count` when you want the **cardinality of a finite stream** (optionally filtered by a predicate). Prefer `isEmpty` for the empty-check question alone, or `scan` when you need a live running count."
 	},
 	"debounce": {
-		"code": "",
+		"code": "import { fromEvent } from 'rxjs'\nimport { debounce, map, switchMap } from 'rxjs/operators'\nimport { timer, of } from 'rxjs'\nimport { ajax } from 'rxjs/ajax'\n\ninterface SearchQuery {\n\tterm: string\n\tcategory: 'simple' | 'advanced'\n}\n\ninterface SearchResult {\n\tid: number\n\ttitle: string\n}\n\nconst input = document.getElementById('search') as HTMLInputElement\n\nconst search$ = fromEvent<Event>(input, 'input').pipe(\n\tmap((): SearchQuery => ({\n\t\tterm: input.value,\n\t\tcategory: input.value.includes(':') ? 'advanced' : 'simple'\n\t})),\n\t// Advanced queries (with operators like \"author:foo\") need longer silence\n\tdebounce((q: SearchQuery) => timer(q.category === 'advanced' ? 600 : 300)),\n\tswitchMap((q: SearchQuery) =>\n\t\tajax.getJSON<SearchResult[]>(`/api/search?q=${encodeURIComponent(q.term)}`)\n\t)\n)\n\nsearch$.subscribe((results: SearchResult[]) => renderResults(results))",
 		"gotchas": [
 			"**`debounce` vs `debounceTime`** — `debounceTime(ms)` is a constant-window shorthand; `debounce(fn)` allows the window to vary per value. Reach for `debounceTime` unless the window must adapt to the value; the simpler form is clearer and easier to test.",
 			"**`debounce` vs `throttle`** — `debounce` suppresses all values and only emits after the stream goes quiet. `throttle` guarantees a leading emission and then suppresses. Use `debounce` when you only care about the final settled value; use `throttle` when you need guaranteed responsiveness with at least one emission per burst.",
@@ -253,7 +253,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `debounce` when the **silence window duration must vary per emitted value**. Use `debounceTime` when the window is constant — it is simpler and easier to test with `TestScheduler`."
 	},
 	"debounceTime": {
-		"code": "",
+		"code": "import { fromEvent } from 'rxjs';\nimport { debounceTime, map, distinctUntilChanged, switchMap } from 'rxjs/operators';\nimport { ajax } from 'rxjs/ajax';\n\ninterface SearchResult {\n\tid: number;\n\ttitle: string;\n}\n\ninterface AjaxResponse {\n\tresults: SearchResult[];\n}\n\nconst searchInput = document.querySelector<HTMLInputElement>('#search')!;\n\n// Classic search typeahead: debounce keystrokes, skip unchanged values,\n// cancel in-flight requests with switchMap if a new query arrives.\nconst results$ = fromEvent<InputEvent>(searchInput, 'input').pipe(\n\tmap((e): string => (e.target as HTMLInputElement).value.trim()),\n\tdebounceTime(300),\n\tdistinctUntilChanged(),\n\tswitchMap((query: string) =>\n\t\tajax.getJSON<AjaxResponse>(`/api/search?q=${encodeURIComponent(query)}`)\n\t),\n\tmap((response): SearchResult[] => response.results),\n);\n\nresults$.subscribe((results: SearchResult[]) => {\n\tconsole.log('Search results:', results);\n});",
 		"gotchas": [
 			"**`debounceTime` vs `throttleTime` — opposite guarantees** — `debounceTime` *requires silence* before emitting, so during a sustained stream (e.g. holding a key down) it will never emit at all. `throttleTime` guarantees at least one emission per window regardless of whether the source pauses. If you need periodic updates *during* activity, use `throttleTime`.",
 			"**Source completion flushes the pending value** — if your source completes (e.g. `take(1)`, `first()`, or a one-shot HTTP stream feeding into `debounceTime`), the pending value is emitted immediately at completion, bypassing the remaining timer. This is usually desirable but can surprise you if you're timing-dependent in tests.",
@@ -265,7 +265,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `debounceTime` when **you only care about the final settled value after a burst** and can afford to wait for silence (search inputs, form validation, resize handlers). Prefer `throttleTime` instead when **you need at least one emission per interval during sustained activity** regardless of whether the source pauses."
 	},
 	"defaultIfEmpty": {
-		"code": "import { of, EMPTY, defaultIfEmpty, Observable } from 'rxjs'\n\n// Scenario: empty-list fallback — substitute \"no results\" for an empty search stream\ninterface SearchResult {\n\tid: string\n\ttitle: string\n}\n\ndeclare const searchResults$: Observable<SearchResult[]>\n\nconst safeResults$: Observable<SearchResult[]> = searchResults$.pipe(\n\tdefaultIfEmpty<SearchResult[], SearchResult[]>([])\n)\n\n// Now downstream can always safely `.length === 0` check\nsafeResults$.subscribe((rs: SearchResult[]): void => {\n\tif (rs.length === 0) console.log('No results')\n})",
+		"code": "",
 		"gotchas": [
 			"**Only fires on source completion** — if the source emits one value and never completes, `defaultIfEmpty` behaves like a plain pass-through. On an infinite empty source, you never get the default.",
 			"**Different from `startWith`** — `startWith` always prepends a value. `defaultIfEmpty` only emits the default *if* the source was empty. Do not use them interchangeably.",
@@ -277,7 +277,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `defaultIfEmpty` when you want the source's values if any, otherwise **a fallback emitted at source completion**. Prefer `startWith` to always prepend, `throwIfEmpty` when empty is an error, or `catchError` for error fallback."
 	},
 	"defer": {
-		"code": "import { defer, repeat, Observable } from 'rxjs'\n\n// Scenario: fresh Promise per subscriber — polling with defer + repeat\ninterface Status {\n\tok: boolean\n}\n\nasync function checkStatus(): Promise<Status> {\n\tconst r = await fetch('/api/status')\n\treturn r.json()\n}\n\nconst polled$: Observable<Status> = defer((): Promise<Status> => checkStatus()).pipe(\n\trepeat({ delay: 5000 })\n)\n\npolled$.subscribe((s: Status): void => console.log('status:', s.ok))",
+		"code": "",
 		"gotchas": [
 			"**Promises are only valid in `defer`** — `from(promise)` creates an Observable that resolves the Promise once, then every subscriber gets the cached result. `defer(() => promise)` creates a new Promise per subscribe. Use the latter for fresh HTTP/IO work.",
 			"**Factory errors become stream errors** — a synchronous throw inside the factory triggers the subscriber's `error` handler. No special handling needed; standard error semantics.",
@@ -289,7 +289,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `defer(factory)` when **each subscribe should run the factory fresh** — new Promise, new HTTP call, new `Date.now()`. Prefer `from(promise)` when you want Promise caching, or `iif` for a two-way boolean branch."
 	},
 	"delay": {
-		"code": "",
+		"code": "import { fromEvent } from 'rxjs'\nimport { delay, map, switchMap } from 'rxjs/operators'\nimport { of } from 'rxjs'\n\n// Show a tooltip 500ms after mouseenter, cancel if mouse leaves first\nconst target = document.getElementById('info-btn')!\n\nconst tooltip$ = fromEvent<MouseEvent>(target, 'mouseenter').pipe(\n\tswitchMap(() =>\n\t\tof('Show tooltip').pipe(delay(500))\n\t)\n)\n\ntooltip$.subscribe(() => showTooltip())\n\nfromEvent(target, 'mouseleave').subscribe(() => hideTooltip())",
 		"gotchas": [
 			"**`delay` delays the completion notification too** — the source completing is treated like any other notification and is shifted by the same duration. If you only want to delay values but complete immediately, use `delayWhen` with a custom notifier.",
 			"**`Date` overload releases all buffered values simultaneously** — if the source has already emitted several values before the target date, they all arrive in a burst at the target time. This is rarely what you want for smooth UI transitions; use the millisecond form for those.",
@@ -301,7 +301,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `delay(ms)` when you need to **shift all emissions by a uniform fixed duration**. Use `delayWhen` when the delay duration varies per value or depends on an external signal."
 	},
 	"delayWhen": {
-		"code": "",
+		"code": "import { from } from 'rxjs'\nimport { delayWhen, map } from 'rxjs/operators'\nimport { timer } from 'rxjs'\n\ninterface ListItem {\n\tid: number\n\tlabel: string\n}\n\nconst items: ListItem[] = [\n\t{ id: 0, label: 'Alpha' },\n\t{ id: 1, label: 'Beta' },\n\t{ id: 2, label: 'Gamma' },\n\t{ id: 3, label: 'Delta' },\n]\n\n// Cascade-animate list items — each appears 150ms after the previous\nfrom(items).pipe(\n\tdelayWhen((_item: ListItem, index: number) => timer(index * 150))\n).subscribe((item: ListItem) => animateIn(item))",
 		"gotchas": [
 			"**Duration Observable that never emits holds the value forever** — if `delayDurationSelector` returns an Observable that never emits (e.g. `NEVER`), that value is buffered indefinitely, accumulating memory. Ensure duration Observables always emit or complete.",
 			"**Values may arrive out of order** — unlike `delay` (which applies a uniform shift), `delayWhen` allows each value to have a different delay duration. A value with a short delay may overtake a preceding value with a longer delay. If ordering must be preserved, add a `concatMap` with index-aware scheduling.",
@@ -312,7 +312,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `delayWhen` when **each value requires an individually tailored delay** — either varying by index, value content, or an external per-value signal. Use `delay(ms)` when all values should be shifted by the same fixed duration."
 	},
 	"dematerialize": {
-		"code": "import { of, materialize, filter, dematerialize, Observable, ObservableNotification } from 'rxjs'\n\n// Scenario: error-suppressing pipeline — materialize, drop errors, dematerialize\nconst raw$: Observable<number> = /* a stream that may error */ new Observable<number>()\n\nconst withoutErrors$: Observable<number> = raw$.pipe(\n\tmaterialize(),\n\tfilter((n: ObservableNotification<number>): boolean => n.kind !== 'E'),\n\tdematerialize()\n)",
+		"code": "",
 		"gotchas": [
 			"**Assumes source emits only notifications** — if the source emits a non-notification value as `next`, `dematerialize` will throw. Keep the materialization discipline end-to-end.",
 			"**Error in source → stream error; error in notification → stream error** — both paths error the output, but only the notification-based one is \"recovered\" information. Subtle distinction when debugging.",
@@ -324,7 +324,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `dematerialize` to **close a materialize-based error-as-data pipeline** or to replay a stream from hand-crafted notifications. For normal error handling, prefer `catchError` or `retry`."
 	},
 	"distinct": {
-		"code": "",
+		"code": "import { from } from 'rxjs'\nimport { distinct } from 'rxjs/operators'\n\ninterface Event {\n\tid: number\n\ttype: string\n}\n\n// Deduplicate events by id — each event id only processed once\nconst events$ = from([\n\t{ id: 1, type: 'click' },\n\t{ id: 2, type: 'hover' },\n\t{ id: 1, type: 'click' },  // duplicate id — suppressed\n\t{ id: 3, type: 'focus' },\n\t{ id: 2, type: 'hover' },  // duplicate id — suppressed\n])\n\nconst uniqueEvents$ = events$.pipe(\n\tdistinct((e: Event) => e.id)\n)\n\nuniqueEvents$.subscribe((e: Event) => console.log(e))\n// { id: 1, type: 'click' }\n// { id: 2, type: 'hover' }\n// { id: 3, type: 'focus' }",
 		"gotchas": [
 			"**Unbounded memory growth on infinite streams** — the internal `Set` accumulates every unique key seen since subscription (or the last flush). For long-running streams with high cardinality, this is a memory leak. Use `flushes` to periodically reset the set, or prefer `distinctUntilChanged` if only consecutive deduplication is needed.",
 			"**`distinct` vs `distinctUntilChanged`** — `distinct` is global (never re-emits any previously seen value); `distinctUntilChanged` is local (only suppresses consecutive repeats). Choose `distinctUntilChanged` for state streams where revisiting a prior value is valid; choose `distinct` when a value must genuinely appear only once.",
@@ -335,7 +335,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `distinct` when a value must **never appear more than once in the output for the lifetime of the stream**. Prefer `distinctUntilChanged` when the same value may validly reappear after a different value, or when unbounded memory growth is a concern."
 	},
 	"distinctUntilChanged": {
-		"code": "",
+		"code": "import { BehaviorSubject } from 'rxjs'\nimport { distinctUntilChanged, map } from 'rxjs/operators'\n\ninterface AppState {\n\tcount: number\n\tlabel: string\n}\n\nconst state$ = new BehaviorSubject<AppState>({ count: 0, label: 'idle' })\n\n// Only re-render the count when it actually changes\nconst count$ = state$.pipe(\n\tmap((s: AppState) => s.count),\n\tdistinctUntilChanged()\n)\n\ncount$.subscribe((count: number) => renderCount(count))\n\nstate$.next({ count: 0, label: 'updated' })  // count unchanged — no render\nstate$.next({ count: 1, label: 'updated' })  // count changed — renders\nstate$.next({ count: 1, label: 'done' })     // count unchanged — no render",
 		"gotchas": [
 			"**Default comparison is `===` (reference equality)** — for objects and arrays, two different references with identical content are considered distinct. Always provide a custom comparator (or use `distinctUntilKeyChanged`) when comparing objects by value.",
 			"**Only suppresses *consecutive* duplicates** — `distinctUntilChanged` is not a set-based deduplication. The same value can appear multiple times in the output as long as a different value appears in between. Use `distinct` for global deduplication.",
@@ -346,7 +346,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `distinctUntilChanged` when you want to **suppress consecutive emissions of the same value** — especially on state streams derived from `BehaviorSubject`. Provide a custom comparator for object comparison; use `distinct` for global deduplication across the entire stream lifetime."
 	},
 	"distinctUntilKeyChanged": {
-		"code": "",
+		"code": "import { BehaviorSubject } from 'rxjs'\nimport { distinctUntilKeyChanged, map } from 'rxjs/operators'\n\ninterface User {\n\tid: number\n\tname: string\n\tavatar: string\n}\n\ninterface AppState {\n\tuser: User\n\ttheme: string\n}\n\nconst state$ = new BehaviorSubject<AppState>({\n\tuser: { id: 1, name: 'Alice', avatar: 'a.png' },\n\ttheme: 'light'\n})\n\n// Only emit when user.name changes — ignore theme changes and avatar changes\nconst userName$ = state$.pipe(\n\tmap((s: AppState) => s.user),\n\tdistinctUntilKeyChanged('name')\n)\n\nuserName$.subscribe((user: User) => renderUserName(user.name))\n\nstate$.next({ ...state$.value, theme: 'dark' })\n// theme changed — userName$ does NOT emit (user.name unchanged)\n\nstate$.next({ ...state$.value, user: { ...state$.value.user, avatar: 'b.png' } })\n// avatar changed — userName$ does NOT emit (name unchanged)\n\nstate$.next({ ...state$.value, user: { ...state$.value.user, name: 'Bob' } })\n// name changed — userName$ DOES emit",
 		"gotchas": [
 			"**Default comparison is `===` on the key value** — for keys whose values are objects or arrays, two different references with identical content are considered distinct. Provide a custom comparator for deep equality on nested objects.",
 			"**Only the specified key is compared** — all other properties are ignored for the purpose of suppression. The full object is still forwarded when the key does change; `distinctUntilKeyChanged` does not project or transform the value.",
@@ -357,7 +357,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `distinctUntilKeyChanged` when you want to **suppress consecutive emissions where a single named property has not changed** — it is the cleanest, most type-safe way to deduplicate state slices by one key. Use `distinctUntilChanged` with a custom comparator when comparing multiple keys or computed values."
 	},
 	"elementAt": {
-		"code": "import { fromEvent, elementAt, Observable } from 'rxjs'\n\n// Scenario: \"third click\" gesture — respond only to the 3rd click in a session\nconst thirdClick$: Observable<MouseEvent> = fromEvent<MouseEvent>(document, 'click').pipe(\n\telementAt(2)\n)\n\nthirdClick$.subscribe((e: MouseEvent): void => {\n\tconsole.log('Third click at', e.clientX, e.clientY)\n})",
+		"code": "",
 		"gotchas": [
 			"**Zero-based index** — `elementAt(0)` = first value, `elementAt(2)` = third value. Off-by-one is the most common bug.",
 			"**Throws synchronously on negative index** — `elementAt(-1)` throws at operator-construction time, before you even subscribe. This is intentional (it is always a programming error).",
@@ -369,7 +369,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `elementAt(n)` when you need **the value at a specific zero-based index** and the source reliably has at least that many emissions. Prefer `first`/`take(1)` for index 0, `last` for the final value, or `skip(n) + take(1)` when you want to spell the intent out."
 	},
 	"EMPTY": {
-		"code": "import { of, switchMap, EMPTY, Observable } from 'rxjs'\n\n// Scenario: no-op in switchMap — skip processing for invalid inputs\ninterface Query {\n\tterm: string\n\tvalid: boolean\n}\n\ndeclare function search(term: string): Observable<string[]>\n\ndeclare const query$: Observable<Query>\n\nconst results$: Observable<string[]> = query$.pipe(\n\tswitchMap((q: Query): Observable<string[]> =>\n\t\tq.valid ? search(q.term) : EMPTY\n\t)\n)",
+		"code": "",
 		"gotchas": [
 			"**`EMPTY` is a constant, not a function** — `EMPTY()` is a type error. Import and use the bare identifier.",
 			"**Shared instance is fine** — because completion is semantically identical per subscriber, there's no need for a factory. Each subscriber gets its own completion signal, but the Observable object is shared.",
@@ -381,7 +381,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `EMPTY` when you need an Observable that **completes immediately with no emission**. Prefer it over `of()` for clarity; use `NEVER` for \"never terminates\", or `throwError` for \"fails immediately\"."
 	},
 	"endWith": {
-		"code": "import { interval, map, fromEvent, startWith, takeUntil, endWith, Observable } from 'rxjs'\n\n// Scenario: teardown status with takeUntil — mark stream end on user click\nconst ticker$: Observable<string> = interval(1000).pipe(\n\tmap((): string => 'tick')\n)\n\nconst documentClicks$: Observable<Event> = fromEvent(document, 'click')\n\nconst monitored$: Observable<string> = ticker$.pipe(\n\tstartWith('interval started'),\n\ttakeUntil(documentClicks$),\n\tendWith('interval ended by click')\n)\n\nmonitored$.subscribe((msg: string): void => console.log(msg))\n\n// Output (user clicks after 3s):\n// 'interval started', 'tick', 'tick', 'tick', 'interval ended by click'",
+		"code": "",
 		"gotchas": [
 			"**Suffix skipped on error** — if the source errors, the suffix values never emit; the error is the terminal notification. If you want a suffix on *both* paths, compose with `catchError` that re-emits the suffix, or use `finalize` for a side effect.",
 			"**No suffix on infinite sources** — `endWith` needs source completion. Pair with `take`, `takeUntil`, or a terminator upstream.",
@@ -393,7 +393,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `endWith(...values)` when you want to **append sentinel values after a finite source completes**. Prefer `finalize` for side-effect-only cleanup, or `concat` when the tail is another Observable rather than a fixed value."
 	},
 	"every": {
-		"code": "import { from, every, Observable } from 'rxjs'\n\n// Scenario: validation roll-up — all fields valid?\ninterface FieldResult {\n\tname: string\n\tvalid: boolean\n}\n\ndeclare const fieldResults$: Observable<FieldResult>\n\nconst allValid$: Observable<boolean> = fieldResults$.pipe(\n\tevery((r: FieldResult): boolean => r.valid)\n)\n\nallValid$.subscribe((ok: boolean): void => {\n\tif (!ok) showFormErrors()\n})\n\nfunction showFormErrors(): void { /* ... */ }",
+		"code": "",
 		"gotchas": [
 			"**Emits `true` on empty source (vacuous truth)** — mathematically correct but can surprise. If you want \"non-empty and all pass\", compose with `isEmpty` or check count.",
 			"**Stalls on infinite sources where every value passes** — the `true` branch requires completion. Pair with `takeUntil` to force a decision.",
@@ -404,7 +404,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `every` when you want to ask **\"do all values satisfy a predicate?\"** with early termination on the first failure. Prefer `find(!predicate)` if you need the offending value, or `count(predicate)` if you need the passing count."
 	},
 	"exhaustAll": {
-		"code": "",
+		"code": "import { Subject } from 'rxjs'\nimport { exhaustAll, map } from 'rxjs/operators'\nimport { ajax } from 'rxjs/ajax'\n\ninterface Report {\n\tid: string\n\tdata: unknown[]\n}\n\n// Higher-order stream: each trigger produces a request Observable\nconst reportRequest$ = new Subject<string>()\n\nconst report$ = reportRequest$.pipe(\n\tmap((reportId: string) =>\n\t\tajax.getJSON<Report>(`/api/reports/${reportId}`)\n\t),\n\texhaustAll()  // ignore new report requests while one is already loading\n)\n\nreport$.subscribe((report: Report) => renderReport(report))\n\nreportRequest$.next('report-1')\nreportRequest$.next('report-2')  // discarded — report-1 still loading\nreportRequest$.next('report-3')  // discarded — report-1 still loading",
 		"gotchas": [
 			"**`exhaustAll` = `exhaustMap(x => x)`** — `exhaustMap` is the idiomatic shorthand. Use `exhaustAll` only when you already have a higher-order Observable and the projection is done upstream.",
 			"**Outer must emit Observables** — if the outer source emits plain values, `exhaustAll` will throw. Use `exhaustMap` with a projection instead.",
@@ -415,7 +415,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `exhaustAll` when you already hold a higher-order Observable and **only one inner should run at a time with new inners discarded while busy**. Prefer `exhaustMap` when you can project and flatten in one step."
 	},
 	"exhaustMap": {
-		"code": "",
+		"code": "import { fromEvent } from 'rxjs'\nimport { exhaustMap, map, tap } from 'rxjs/operators'\nimport { ajax } from 'rxjs/ajax'\n\ninterface SubmitResult {\n\tid: number\n\tstatus: string\n}\n\nconst form = document.getElementById('checkout-form') as HTMLFormElement\nconst submitBtn = document.getElementById('submit') as HTMLButtonElement\n\n// Prevent double-submission: ignore clicks while request is in flight\nconst submission$ = fromEvent<MouseEvent>(submitBtn, 'click').pipe(\n\texhaustMap(() => {\n\t\tconst payload = new FormData(form)\n\t\treturn ajax.post<SubmitResult>('/api/checkout', payload).pipe(\n\t\t\tmap((res) => res.response),\n\t\t\ttap({\n\t\t\t\tsubscribe: () => submitBtn.setAttribute('disabled', 'true'),\n\t\t\t\tfinalize: () => submitBtn.removeAttribute('disabled')\n\t\t\t})\n\t\t)\n\t})\n)\n\nsubmission$.subscribe({\n\tnext: (result: SubmitResult) => showSuccess(result),\n\terror: (err: Error) => showError(err.message)\n})",
 		"gotchas": [
 			"**Dropped values are silent** — there is no notification when a source value is ignored. If you need to show \"request in progress, please wait\" feedback, manage that state explicitly (e.g. with a `BehaviorSubject<boolean>` tracking loading state) rather than relying on `exhaustMap` to communicate it.",
 			"**`exhaustMap` vs `concatMap`** — both prevent overlapping inner subscriptions, but `concatMap` *queues* all source values while `exhaustMap` *discards* them. Use `exhaustMap` when extra triggers should be dropped entirely; use `concatMap` when every trigger must eventually be processed.",
@@ -427,7 +427,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `exhaustMap` when **only one inner Observable should run at a time and new triggers while busy must be discarded** (form submit, login, payment). Prefer `concatMap` when every trigger must be processed in order, and `switchMap` when only the latest trigger matters."
 	},
 	"expand": {
-		"code": "import { defer, expand, EMPTY, from, Observable, reduce } from 'rxjs'\n\n// Scenario: paginated API crawling — fetch every page transparently\ninterface Page<T> {\n\titems: T[]\n\tnextCursor: string | null\n}\n\nconst fetchPage = <T>(cursor: string | null): Observable<Page<T>> =>\n\tdefer((): Promise<Page<T>> =>\n\t\tfetch(`/api/items?cursor=${cursor ?? ''}`).then((r): Promise<Page<T>> => r.json())\n\t)\n\nconst allItems$: Observable<string[]> = fetchPage<string>(null).pipe(\n\texpand((page: Page<string>): Observable<Page<string>> =>\n\t\tpage.nextCursor === null ? EMPTY : fetchPage<string>(page.nextCursor)\n\t),\n\treduce((acc: string[], page: Page<string>): string[] => [...acc, ...page.items], [])\n)",
+		"code": "",
 		"gotchas": [
 			"**Easy to produce an infinite stream** — because every output re-enters `project`, forgetting a base case creates an unterminated recursion. Always ensure `project` returns `EMPTY` (or the stream completes) at a stopping condition, or bound with `take(n)` downstream.",
 			"**`concurrent` controls breadth vs depth** — default `Infinity` means every branch runs in parallel (breadth-first). Set `concurrent: 1` for strict depth-first (each branch fully resolves before the next starts), useful for rate-limited APIs.",
@@ -439,7 +439,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `expand` when the **next step depends on the output of the previous step** and must be produced by an Observable (async pagination, tree walks). Prefer `mergeMap` when one level of flattening suffices, or `mergeScan` when you need a running accumulator alongside the recursion."
 	},
 	"filter": {
-		"code": "",
+		"code": "import { fromEvent } from 'rxjs'\nimport { filter, map } from 'rxjs/operators'\n\ninterface KeyboardAction {\n\tkey: string\n\tctrl: boolean\n}\n\n// Only process Ctrl+S keyboard shortcut\nconst save$ = fromEvent<KeyboardEvent>(document, 'keydown').pipe(\n\tfilter((e: KeyboardEvent) => e.ctrlKey && e.key === 's'),\n\tmap((e: KeyboardEvent): KeyboardAction => ({ key: e.key, ctrl: e.ctrlKey }))\n)\n\nsave$.subscribe(() => saveDocument())",
 		"gotchas": [
 			"**Use the type-guard overload to narrow types** — writing `filter(x => x !== null)` leaves the output type as `T | null`. Writing `filter((x): x is T => x !== null)` narrows it to `T`. Always use the type-guard form when narrowing is the goal.",
 			"**`filter` does not short-circuit** — unlike `first` or `take`, `filter` never completes the stream on its own. If you want the first value matching a predicate and then completion, use `first(predicate)` instead.",
@@ -450,7 +450,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `filter` when you need to **suppress values that don't satisfy a condition** on an ongoing stream. Prefer `first(predicate)` when you only need the first matching value and want auto-completion."
 	},
 	"finalize": {
-		"code": "import { defer, finalize, Observable, BehaviorSubject } from 'rxjs'\n\n// Scenario: loading spinner — off on any termination (complete, error, unsubscribe)\ninterface Result { data: string }\n\nconst isLoading$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false)\n\ndeclare function fetchResult(): Promise<Result>\n\nconst loadData$: Observable<Result> = defer((): Promise<Result> => {\n\tisLoading$.next(true)\n\treturn fetchResult()\n}).pipe(\n\tfinalize((): void => isLoading$.next(false))\n)",
+		"code": "",
 		"gotchas": [
 			"**Fires on every termination path** — `complete`, `error`, *and* `unsubscribe`. If you only want cleanup on specific paths, use `tap({ complete })` or `tap({ error })`.",
 			"**Runs *after* downstream error handling** — if downstream operators or subscribers handle the error, `finalize`'s callback still fires. Often desirable; occasionally surprising for state that depends on outcome.",
@@ -462,7 +462,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `finalize` when you need **cleanup that runs regardless of how the stream ended**. Prefer `tap({ complete })` / `tap({ error })` for path-specific side effects, or `catchError` for actual error recovery."
 	},
 	"find": {
-		"code": "import { from, find, Observable } from 'rxjs'\n\n// Scenario: search-by-id — locate the first user matching an id in an event stream\ninterface User {\n\tid: number\n\tname: string\n}\n\ndeclare const users$: Observable<User>\n\nconst targetUser$: Observable<User | undefined> = users$.pipe(\n\tfind((u: User): boolean => u.id === 42)\n)\n\ntargetUser$.subscribe((user: User | undefined): void => {\n\tif (user) {\n\t\tconsole.log('Found:', user.name)\n\t} else {\n\t\tconsole.log('No user with id 42 in the stream.')\n\t}\n})",
+		"code": "",
 		"gotchas": [
 			"**Emits `undefined`, not an error, on no match** — compare to `first(predicate)` which errors with `EmptyError`. This is the main reason to choose `find`: absence is normal.",
 			"**Predicate is required** — `find()` with no arguments is a type error. Use `first()` for \"get me the first value without a predicate\".",
@@ -474,7 +474,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `find` when you want **the first matching value and \"not found\" is a valid outcome** yielding `undefined`. Prefer `first(predicate)` when absence should be an error, or `filter` when you want every match."
 	},
 	"findIndex": {
-		"code": "import { from, findIndex, Observable } from 'rxjs'\n\n// Scenario: first-error index — locate the position of the first failed check\ninterface CheckResult {\n\tstep: string\n\tpassed: boolean\n}\n\ndeclare const checks$: Observable<CheckResult>\n\nconst firstFailureIndex$: Observable<number> = checks$.pipe(\n\tfindIndex((r: CheckResult): boolean => !r.passed)\n)\n\nfirstFailureIndex$.subscribe((idx: number): void => {\n\tif (idx === -1) {\n\t\tconsole.log('All checks passed')\n\t} else {\n\t\tconsole.log('First failure at step', idx)\n\t}\n})",
+		"code": "",
 		"gotchas": [
 			"**`-1` sentinel on no match** — just like `Array.prototype.findIndex`. Easy to forget to handle, leading to \"index off by one\" bugs downstream.",
 			"**Predicate is required** — no no-arg overload. If you want \"index of the first value\", use `scan` with a counter or just emit `0` via `mapTo`/`map`.",
@@ -486,7 +486,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `findIndex` when you need **the position** (zero-based) of the first matching value and `-1` is acceptable for \"not found\". Prefer `find` for the value itself, or `scan` when you need both."
 	},
 	"first": {
-		"code": "import { fromEvent, first, Observable } from 'rxjs'\n\n// Scenario: one-shot bootstrap — await the first \"ready\" DOM event, then proceed\nconst ready$: Observable<Event> = fromEvent(window, 'DOMContentLoaded').pipe(\n\tfirst()\n)\n\nready$.subscribe((): void => startApp())\n\nfunction startApp(): void {\n\t/* initialise */\n}",
+		"code": "",
 		"gotchas": [
 			"**Errors with `EmptyError` when source completes empty** — unlike `take(1)` which completes silently, `first()` treats an empty source as an error. This is the single most frequent surprise. Use `take(1)` if you want silent completion, or pass a `defaultValue` to `first`.",
 			"**Predicate never matches → `EmptyError`** — if you give a predicate and the source completes without any matching value and no `defaultValue`, you also get `EmptyError`. The default-value parameter is a runtime safety net.",
@@ -498,7 +498,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `first()` when you want **the first value and treat \"no value\" as an error**. Prefer `take(1)` when absence is acceptable, `find` when you expect a predicate may not match, or `single` when you want to assert uniqueness."
 	},
 	"firstValueFrom": {
-		"code": "import { firstValueFrom, Observable } from 'rxjs'\n\n// Scenario: async-function interop — await a single API response\ninterface UserProfile {\n\tid: string\n\tname: string\n}\n\ndeclare const getUser$: (id: string) => Observable<UserProfile>\n\nasync function loadUser(id: string): Promise<UserProfile> {\n\tconst profile = await firstValueFrom(getUser$(id))\n\treturn profile\n}",
+		"code": "",
 		"gotchas": [
 			"**Rejects with `EmptyError` if source completes empty** — mirrors the `first()` operator's error semantics. Always pass `{ defaultValue }` if empty is possible.",
 			"**Use it only on sources that emit or complete** — on an infinite silent source, the Promise hangs forever with no way to cancel. The JSDoc literally warns about this.",
@@ -510,7 +510,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `firstValueFrom` when you want to **await the first emission of an Observable as a Promise**. Prefer `lastValueFrom` when you need the final value of a finite stream, or stay in the Observable world for multi-value scenarios."
 	},
 	"forkJoin": {
-		"code": "import { forkJoin, Observable } from 'rxjs'\n\n// Scenario: page-load aggregation — bundle three parallel fetches into one emission\ninterface User { id: string; name: string }\ninterface Post { id: string; title: string }\ninterface Permission { action: string; allowed: boolean }\n\ndeclare const user$: Observable<User>\ndeclare const posts$: Observable<Post[]>\ndeclare const permissions$: Observable<Permission[]>\n\ninterface PageData {\n\tuser: User\n\tposts: Post[]\n\tpermissions: Permission[]\n}\n\nconst pageReady$: Observable<PageData> = forkJoin({\n\tuser: user$,\n\tposts: posts$,\n\tpermissions: permissions$\n})\n\npageReady$.subscribe((data: PageData): void => {\n\trenderPage(data)\n})\n\nfunction renderPage(_d: PageData): void { /* ... */ }",
+		"code": "",
 		"gotchas": [
 			"**Never emits if any source is infinite** — `forkJoin` waits for completion. Wrapping an infinite source in `first()` or `take(1)` is typically what you want.",
 			"**Empty source kills the whole result** — if one source completes without ever emitting, `forkJoin` emits nothing (or errors, depending on whether others emitted). Often surprising.",
@@ -523,7 +523,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `forkJoin` when you need the **last value from each of several finite sources, delivered as one combined emission**. Prefer `combineLatest` for live updates, `zip` for position-paired sequences, or `merge` when you want all values individually."
 	},
 	"from": {
-		"code": "",
+		"code": "import { from } from 'rxjs'\nimport { mergeMap, map } from 'rxjs/operators'\nimport { ajax } from 'rxjs/ajax'\n\ninterface User {\n\tid: number\n\tname: string\n}\n\nconst userIds = [1, 2, 3, 4, 5]\n\n// Convert array to stream, then fetch each user in parallel\nconst users$ = from(userIds).pipe(\n\tmergeMap((id: number) => ajax.getJSON<User>(`/api/users/${id}`))\n)\n\nusers$.subscribe((user: User) => console.log(user))",
 		"gotchas": [
 			"**`from(promise)` is not cancellable** — unlike `ajax` from `rxjs/ajax`, a native `fetch` or arbitrary Promise wrapped in `from` cannot be aborted when the subscription is unsubscribed. The Promise runs to completion regardless. Use `ajax` or wire an `AbortController` manually if cancellation is needed.",
 			"**`from(observable)` just re-wraps** — passing an existing RxJS Observable to `from` returns a new Observable that subscribes to it. This is a no-op in most cases; just use the Observable directly. It is useful for normalising `ObservableInput` in generic code.",
@@ -534,7 +534,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `from` when you need to **convert an existing data structure** (array, Promise, iterable, async iterable) into an Observable. Use `of` for emitting literal values and `fromEvent` for DOM/Node event streams."
 	},
 	"fromEvent": {
-		"code": "",
+		"code": "import { fromEvent, merge } from 'rxjs'\nimport { map, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators'\nimport { ajax } from 'rxjs/ajax'\n\ninterface SearchResult {\n\tid: number\n\ttitle: string\n}\n\nconst input = document.getElementById('search') as HTMLInputElement\n\n// Reactive search typeahead from DOM input events\nconst search$ = fromEvent<InputEvent>(input, 'input').pipe(\n\tmap((e: InputEvent) => (e.target as HTMLInputElement).value.trim()),\n\tdebounceTime(300),\n\tdistinctUntilChanged(),\n\tswitchMap((term: string) =>\n\t\tajax.getJSON<SearchResult[]>(`/api/search?q=${encodeURIComponent(term)}`)\n\t)\n)\n\nsearch$.subscribe((results: SearchResult[]) => renderResults(results))",
 		"gotchas": [
 			"**Never completes — always add a termination operator** — `fromEvent` runs indefinitely. Always compose with `takeUntil(destroy$)`, `take(n)`, or `first()` to prevent subscription leaks, especially in component lifecycle contexts.",
 			"**Events before subscription are missed** — `fromEvent` is not a replay stream. If events fire before `.subscribe()` is called, they are lost. This is the expected \"hot\" behaviour of DOM events; use `shareReplay` only if you have a legitimate need to cache past events.",
@@ -546,7 +546,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `fromEvent` when your source is a **DOM element, Node.js EventEmitter, or any object with standard `addEventListener`/`removeEventListener`**. Use `fromEventPattern` when the event registration API is non-standard (e.g. a custom `on`/`off` pair with additional arguments)."
 	},
 	"fromEventPattern": {
-		"code": "",
+		"code": "import { fromEventPattern } from 'rxjs'\nimport { map, takeUntil, share } from 'rxjs/operators'\n\n// Wrapping IntersectionObserver — not supported by fromEvent\nfunction observeIntersection(element: Element): Observable<IntersectionObserverEntry[]> {\n\treturn fromEventPattern<IntersectionObserverEntry[]>(\n\t\t(handler) => {\n\t\t\tconst observer = new IntersectionObserver(handler, { threshold: 0.5 })\n\t\t\tobserver.observe(element)\n\t\t\treturn observer  // return token for removeHandler\n\t\t},\n\t\t(_handler, observer) => {\n\t\t\t(observer as IntersectionObserver).disconnect()\n\t\t}\n\t)\n}\n\nconst card = document.getElementById('card')!\nconst visible$ = observeIntersection(card).pipe(\n\tmap((entries: IntersectionObserverEntry[]) =>\n\t\tentries.some((e) => e.isIntersecting)\n\t)\n)\n\nvisible$.subscribe((isVisible: boolean) => {\n\tconsole.log('Card visible:', isVisible)\n})",
 		"gotchas": [
 			"**`removeHandler` is optional but almost always needed** — omitting it means the event listener is never removed on unsubscription, causing a memory leak. Always provide `removeHandler` unless the event source manages its own cleanup.",
 			"**The `handler` reference must be consistent** — `addHandler` and `removeHandler` receive the same function reference so that `removeEventListener`-style APIs work correctly. Do not wrap or recreate the handler inside `addHandler`.",
@@ -557,7 +557,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `fromEventPattern` when your event source has a **non-standard registration API** that `fromEvent` cannot handle — custom `on`/`off` pairs, observer-pattern objects, or APIs that return a teardown handle. Prefer `fromEvent` for all standard DOM and Node.js event sources."
 	},
 	"fromFetch": {
-		"code": "import { fromFetch } from 'rxjs/fetch'\nimport { switchMap, catchError } from 'rxjs'\nimport type { Observable } from 'rxjs'\n\ninterface User {\n\tid: number\n\tname: string\n}\n\n// Scenario: type-safe JSON fetch with abort-on-unsubscribe\nconst user$ = (id: number): Observable<User> =>\n\tfromFetch(`/api/users/${id}`, {\n\t\tselector: (res: Response): Observable<User> => {\n\t\t\tif (!res.ok) throw new Error(`HTTP ${res.status}`)\n\t\t\treturn res.json() as Observable<User>\n\t\t},\n\t}).pipe(\n\t\tcatchError((err: unknown): Observable<never> => {\n\t\t\tconsole.error('Fetch failed', err)\n\t\t\tthrow err\n\t\t})\n\t)\n\n// In a switchMap context — previous request is aborted automatically\nconst userId$ = new Subject<number>()\nconst currentUser$ = userId$.pipe(\n\tswitchMap((id: number): Observable<User> => user$(id))\n)",
+		"code": "",
 		"gotchas": [
 			"**Import path is `rxjs/fetch`, not `rxjs`** — `fromFetch` lives in a sub-entry point. `import { fromFetch } from 'rxjs/fetch'` — forgetting this gives a confusing \"not exported\" error.",
 			"**HTTP error status codes do not throw by default** — a 404 or 500 resolves the Observable normally with a `Response` whose `ok` is `false`. You must check `res.ok` inside the `selector` and throw explicitly to route errors into the error channel.",
@@ -568,7 +568,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `fromFetch` when you want a fetch request that **automatically aborts on unsubscribe** — the common case with `switchMap` in search or navigation. Use `ajax()` when you need XMLHttpRequest-specific features (upload progress, IE11, response type control)."
 	},
 	"fromSubscribable": {
-		"code": "",
+		"code": "import { fromSubscribable } from 'rxjs'\nimport { map, filter } from 'rxjs/operators'\n\n// A minimal custom Subscribable implementation\nclass CustomSubscribable<T> {\n\tconstructor(private values: T[]) {}\n\n\tsubscribe(observer: { next?: (v: T) => void; complete?: () => void }) {\n\t\tfor (const value of this.values) {\n\t\t\tobserver.next?.(value)\n\t\t}\n\t\tobserver.complete?.()\n\t\treturn { unsubscribe: () => {} }\n\t}\n}\n\nconst custom = new CustomSubscribable([1, 2, 3, 4, 5])\n\n// Convert to RxJS Observable to use the full operator library\nconst result$ = fromSubscribable(custom).pipe(\n\tfilter((n: number) => n % 2 === 0),\n\tmap((n: number) => n * 10)\n)\n\nresult$.subscribe((n: number) => console.log(n))\n// 20\n// 40",
 		"gotchas": [
 			"**Niche use case — `from` handles most cases** — `from` already accepts any `ObservableInput` including objects that duck-type as Observables. Use `fromSubscribable` only when you explicitly have a `Subscribable<T>` typed reference and want the TypeScript type to be correctly inferred as `Observable<T>`.",
 			"**RxJS 7+ only** — `fromSubscribable` does not exist in RxJS 6. In RxJS 6, use `from(subscribable as any)` or cast through `Observable` directly.",
@@ -578,7 +578,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `fromSubscribable` when you have an explicit **`Subscribable<T>` typed reference** from a non-RxJS source and need a proper `Observable<T>` with full operator support. In all other cases, `from` is sufficient."
 	},
 	"generate": {
-		"code": "import { generate, Observable } from 'rxjs'\n\n// Scenario: custom sequence — powers of 2 up to 64\nconst powers$: Observable<number> = generate({\n\tinitialState: 1,\n\tcondition: (n: number): boolean => n <= 64,\n\titerate: (n: number): number => n * 2\n})\n\npowers$.subscribe((n: number): void => console.log(n))\n// logs: 1, 2, 4, 8, 16, 32, 64",
+		"code": "",
 		"gotchas": [
 			"**Omitting `condition` creates an infinite source** — without a termination predicate, `generate` loops forever. Always pair with `take(n)` downstream if you haven't provided a condition.",
 			"**Synchronous by default** — without a scheduler, the entire sequence runs inside `subscribe()`. Use `scheduler: asyncScheduler` for async delivery, or pipe through `observeOn`.",
@@ -590,7 +590,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `generate` when you need **a state-driven sequence with non-trivial step or termination logic** (geometric, Fibonacci, state-machine walk). Prefer `range` for integer sequences, `of` for known literal values, or `from` when you already have an iterable."
 	},
 	"groupBy": {
-		"code": "import { Subject, groupBy, mergeMap, throttleTime, GroupedObservable, Observable } from 'rxjs'\n\n// Scenario: per-user rate limiting — throttle each user's requests independently\ninterface ApiRequest {\n\tuserId: string\n\tpath: string\n}\n\nconst incoming$: Subject<ApiRequest> = new Subject<ApiRequest>()\n\nconst rateLimited$: Observable<ApiRequest> = incoming$.pipe(\n\tgroupBy((req: ApiRequest): string => req.userId),\n\tmergeMap((userGroup$: GroupedObservable<string, ApiRequest>): Observable<ApiRequest> =>\n\t\tuserGroup$.pipe(throttleTime(1000))\n\t)\n)\n\nrateLimited$.subscribe((req: ApiRequest): void => handle(req))\n\nfunction handle(_req: ApiRequest): void {\n\t/* forward to backend */\n}",
+		"code": "",
 		"gotchas": [
 			"**Groups never evict by default** — every unique key creates a group that stays alive until the source completes. On high-cardinality keys (e.g. millions of unique IDs) this is a memory leak. Use the `duration` option to close inactive groups: `duration: g$ => g$.pipe(debounceTime(60_000))`.",
 			"**Must subscribe to every group** — if you receive a `GroupedObservable` but never subscribe to it, its emissions buffer forever inside the internal Subject. `mergeMap` the outer stream to ensure every group is drained.",
@@ -602,7 +602,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `groupBy` when **each value's key determines an independent sub-stream** that needs its own operator pipeline (rate limit, debounce, reduce). Prefer `partition` for a simple two-way split, or plain `filter` when you only care about one category."
 	},
 	"ignoreElements": {
-		"code": "import { concat, from, ignoreElements, of, Observable, tap } from 'rxjs'\n\n// Scenario: concat sequencing — run warmup work, then start the main stream.\n// The warmup produces values we don't need downstream; we just need it to complete.\nconst warmup$: Observable<never> = from(['cache', 'prefs', 'flags']).pipe(\n\ttap((what: string): void => console.log('warming', what)),\n\tignoreElements()\n)\n\nconst main$: Observable<string> = of('ready', 'running')\n\nconst app$: Observable<string> = concat(warmup$, main$)\napp$.subscribe((x: string): void => console.log(x))\n// logs: warming cache, warming prefs, warming flags, ready, running",
+		"code": "",
 		"gotchas": [
 			"**Output type is `Observable<never>`** — deliberately. Any downstream operator that reads values will be flagged by TypeScript as receiving `never`. Use `concat`/`merge`/`combineLatest` with *other* sources to re-introduce values.",
 			"**Errors still propagate** — `ignoreElements` does not swallow errors. If you want to ignore those too, compose with `catchError(() => EMPTY)`.",
@@ -614,7 +614,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `ignoreElements()` when you want **the source's completion/error signal but not its values** (sequencing, fire-and-forget side effects). Prefer `EMPTY` for a no-source placeholder or `filter(() => false)` if you prefer spelling out the intent."
 	},
 	"iif": {
-		"code": "import { iif, of, EMPTY, Observable } from 'rxjs'\n\n// Scenario: access control — return real data for authed users, empty stream otherwise\ninterface UserData {\n\tid: string\n\titems: string[]\n}\n\nlet isAuthed = false   // runtime flag\n\ndeclare const realData$: Observable<UserData>\n\nconst gated$: Observable<UserData> = iif(\n\t(): boolean => isAuthed,\n\trealData$,\n\tEMPTY\n)\n\nisAuthed = true\ngated$.subscribe((data: UserData): void => console.log(data))\n// subscriber receives real data\n\nisAuthed = false\ngated$.subscribe((): void => { /* never fires — EMPTY completes immediately */ })",
+		"code": "",
 		"gotchas": [
 			"**Condition is evaluated at subscribe, not at construction** — the value of `isAuthed` when `subscribe()` is called is what matters, not when `iif()` was created. Useful but occasionally surprising.",
 			"**Both branches are still referenced** — even though only one is subscribed, the other Observable object exists in memory. Don't put expensive construction inline; `iif(() => cond, cheapObs$, expensiveObs$)` is fine, but creating a mega-stream as the unused branch wastes memory.",
@@ -626,7 +626,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `iif(cond, A$, B$)` when you need a **two-way branch chosen at subscribe time**. Prefer `defer` for more branches or complex selection, or `switchMap` when the decision depends on a value flowing through the pipeline."
 	},
 	"interval": {
-		"code": "",
+		"code": "import { interval } from 'rxjs'\nimport { switchMap, takeUntil } from 'rxjs/operators'\nimport { Subject } from 'rxjs'\nimport { ajax } from 'rxjs/ajax'\n\ninterface FeedItem {\n\tid: number\n\ttitle: string\n\ttimestamp: number\n}\n\nconst destroy$ = new Subject<void>()\n\n// Refresh feed every 30 seconds; cancel on destroy\nconst feed$ = interval(30_000).pipe(\n\tswitchMap(() => ajax.getJSON<FeedItem[]>('/api/feed')),\n\ttakeUntil(destroy$)\n)\n\nfeed$.subscribe((items: FeedItem[]) => renderFeed(items))\n\n// On teardown:\n// destroy$.next(); destroy$.complete()",
 		"gotchas": [
 			"**`interval` never completes** — always pair with `takeUntil(destroy$)`, `take(n)`, or `takeWhile` to prevent memory leaks. Subscribing without teardown is the most common `interval` mistake.",
 			"**First emission is NOT immediate** — `interval(n)` emits `0` after `n` ms. If you need an immediate first tick followed by regular ticks, use `timer(0, n)` instead.",
@@ -638,7 +638,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `interval(n)` for a **fixed-rate clock where the first tick matches the period**. Use `timer(delay, n)` when the first tick should occur after a different initial delay. Always add teardown with `takeUntil` or `take`."
 	},
 	"isEmpty": {
-		"code": "import { Subject, isEmpty, takeUntil, timer, Observable } from 'rxjs'\n\n// Scenario: empty-result probe — did the user perform any action in a 5s window?\ninterface UserAction {\n\ttype: string\n}\n\nconst actions$: Subject<UserAction> = new Subject<UserAction>()\nconst window$: Observable<UserAction> = actions$.pipe(takeUntil(timer(5000)))\n\nconst wasIdle$: Observable<boolean> = window$.pipe(isEmpty())\n\nwasIdle$.subscribe((idle: boolean): void => {\n\tif (idle) showIdlePrompt()\n})\n\nfunction showIdlePrompt(): void { /* ... */ }",
+		"code": "",
 		"gotchas": [
 			"**Stalls on infinite sources with no values** — `true` requires completion. Pair with `takeUntil` or `take(1)` to force a decision.",
 			"**Emits `false` on any value — including `undefined`, `null`, `0`** — the check is \"did `next` fire\", not \"was the value truthy\". For truthy-only checking, use `filter(Boolean)` upstream.",
@@ -650,7 +650,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `isEmpty` when you want a **boolean \"did the stream emit anything?\"** and value content doesn't matter. Prefer `count` for the full count, `every` for predicate quantification, or `defaultIfEmpty` to substitute rather than summarise."
 	},
 	"isObservable": {
-		"code": "import { isObservable, from, Observable, of } from 'rxjs'\n\n// Scenario: polymorphic API — accept Observable OR Promise OR value\ntype InputLike<T> = Observable<T> | Promise<T> | T\n\nfunction toObservable<T>(input: InputLike<T>): Observable<T> {\n\tif (isObservable(input)) return input\n\tif (input && typeof (input as Promise<T>).then === 'function') return from(input as Promise<T>)\n\treturn of(input as T)\n}\n\ntoObservable(of(1)).subscribe(console.log)           // 1\ntoObservable(Promise.resolve(2)).subscribe(console.log)   // 2\ntoObservable(3).subscribe(console.log)               // 3",
+		"code": "",
 		"gotchas": [
 			"**Doesn't recognise every convertible input** — `from()` accepts Promises, iterables, async iterables, and `ArrayLike`. `isObservable` only returns `true` for actual Observables. For \"can this be converted\", there's no single helper; the canonical approach is `from(input)` inside a `defer`.",
 			"**Returns `true` for structurally-compatible non-RxJS Observables** — any object with `lift` and `subscribe` functions passes. This is interop-friendly but can match unintended objects if your codebase has a `lift` method for unrelated reasons.",
@@ -662,7 +662,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `isObservable` for **runtime type-narrowing** in polymorphic APIs that accept multiple input kinds. For \"convert to Observable\", prefer `from(input)` directly."
 	},
 	"last": {
-		"code": "import { defer, from, last, Observable } from 'rxjs'\n\n// Scenario: final-answer aggregation — take the last HTTP polling response\n// before the stream terminates (e.g., after takeUntil(stopPoll$))\ninterface PollResult {\n\tstatus: 'pending' | 'done'\n\tvalue: number\n}\n\ndeclare const poll$: Observable<PollResult>\ndeclare const stopPoll$: Observable<void>\n\nconst finalResult$: Observable<PollResult> = poll$.pipe(last())\n\nfinalResult$.subscribe((r: PollResult): void => {\n\tconsole.log('final', r)\n})",
+		"code": "",
 		"gotchas": [
 			"**Stalls on infinite sources** — `last` must wait for source completion. On an `interval()` or unbounded WebSocket it never emits and the internal `lastValue` slot grows stale forever. Pair with `takeUntil` or `take(n)` to force termination.",
 			"**Errors with `EmptyError` on empty source** — same trap as `first`. Supply a `defaultValue` or handle `EmptyError` in a `catchError`.",
@@ -673,7 +673,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `last` when you want **the final value on a guaranteed-finite source** and empty is an error. Prefer `takeLast(1)` when empty is acceptable, or `reduce` when the result depends on all values rather than just the last one."
 	},
 	"lastValueFrom": {
-		"code": "import { interval, take, toArray, lastValueFrom, Observable } from 'rxjs'\n\n// Scenario: finite stream → array aggregation via toArray + lastValueFrom\nasync function firstFiveTicks(): Promise<number[]> {\n\tconst ticks$: Observable<number[]> = interval(100).pipe(\n\t\ttake(5),\n\t\ttoArray()\n\t)\n\treturn await lastValueFrom(ticks$)\n\t// resolves with [0, 1, 2, 3, 4] after ~500ms\n}",
+		"code": "",
 		"gotchas": [
 			"**Hangs forever on infinite sources** — like `last()`, requires source completion. The JSDoc warning is explicit: only use with sources that *will* complete. Pair with `take` / `takeUntil` / `timeout`.",
 			"**Rejects with `EmptyError` on empty source** — mirrors the `last()` operator. Supply `{ defaultValue }` if empty is possible.",
@@ -685,7 +685,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `lastValueFrom` when you want to **await the final emission of a finite Observable as a Promise**. Prefer `firstValueFrom` for one-shot early resolution, or stay reactive when multi-value consumption is fine."
 	},
 	"map": {
-		"code": "import { fromEvent, map, Observable } from 'rxjs'\n\n// Scenario: MVU action shaping — turn keystroke events into typed actions\ntype Action = { type: 'queryChanged'; query: string }\n\nconst input: HTMLInputElement = document.querySelector('#search')!\n\nconst action$: Observable<Action> = fromEvent<InputEvent>(input, 'input').pipe(\n\tmap((e: InputEvent): Action => ({\n\t\ttype: 'queryChanged',\n\t\tquery: (e.target as HTMLInputElement).value,\n\t}))\n)",
+		"code": "",
 		"gotchas": [
 			"**Never do side effects inside `map`** — a throwing side effect or mutation makes the operator non-pure and causes the stream to error or leak state. Put logging, subscriptions, or mutations in `tap` instead.",
 			"**`map` errors are stream errors** — if `project` throws synchronously (e.g. reading a property on `undefined`), the stream errors and terminates. Guard with optional chaining or move the risky work into a `switchMap` with `catchError`.",
@@ -696,7 +696,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `map` when the transformation is **a pure synchronous function of a single value**. Prefer `scan` when the transformation needs prior state, `switchMap` when it returns an Observable, or `tap` when you only want a side effect."
 	},
 	"mapTo": {
-		"code": "import { fromEvent, merge, map, Observable } from 'rxjs'\n\n// Scenario: boolean flag streams — track \"is mouse inside element\"\ntype HoverState = boolean\n\nconst el: HTMLElement = document.querySelector('#card')!\n\nconst enter$: Observable<HoverState> = fromEvent(el, 'mouseenter').pipe(\n\tmap((): HoverState => true)\n)\nconst leave$: Observable<HoverState> = fromEvent(el, 'mouseleave').pipe(\n\tmap((): HoverState => false)\n)\nconst hover$: Observable<HoverState> = merge(enter$, leave$)",
+		"code": "",
 		"gotchas": [
 			"**Deprecated — use `map(() => value)`** — `mapTo` is flagged for removal in RxJS 9. New code should use `map`. The two are semantically identical.",
 			"**The constant is captured by reference** — if `value` is an object (`mapTo({ type: 'CLICK' })`), every emission emits the *same object reference*. Downstream mutations affect all emissions. Use `map(() => ({ type: 'CLICK' }))` to produce a fresh object each time.",
@@ -706,7 +706,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Do not use `mapTo` in new code. Use `map(() => value)` — it's the supported replacement, is strictly more flexible, and avoids the v9 deprecation."
 	},
 	"materialize": {
-		"code": "import { of, map, materialize, dematerialize, filter, Observable } from 'rxjs'\n\n// Scenario: log all notifications uniformly and filter out errors\nconst source$: Observable<number> = of(1, 2, 3).pipe(\n\tmap((n: number): number => {\n\t\tif (n === 2) throw new Error('bad value')\n\t\treturn n * 10\n\t})\n)\n\nconst safe$: Observable<number> = source$.pipe(\n\tmaterialize(),\n\tfilter((n): boolean => n.kind !== 'E'),\n\tdematerialize()\n)\n\nsafe$.subscribe((v: number): void => console.log(v))\n// logs: 10, (then completes — the error was filtered out)",
+		"code": "",
 		"gotchas": [
 			"**Output completes even if source errored** — because the error becomes a data `next`, the output stream itself doesn't error. Downstream error handlers will never fire on the original error unless you `dematerialize` downstream.",
 			"**`kind: 'E'` contains `error`, not `value`** — don't blindly read `.value`. Narrow the notification type first.",
@@ -718,7 +718,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `materialize` when you need to **inspect or transform error/complete notifications as data**. Almost always paired with `dematerialize` downstream to restore normal signal semantics."
 	},
 	"max": {
-		"code": "import { from, max, Observable } from 'rxjs'\n\n// Scenario: highest score — pick the winning score from a completed round's results\ninterface PlayerScore {\n\tplayer: string\n\tscore: number\n}\n\ndeclare const roundResults$: Observable<PlayerScore>\n\nconst winner$: Observable<PlayerScore> = roundResults$.pipe(\n\tmax((a: PlayerScore, b: PlayerScore): number => a.score - b.score)\n)\n\nwinner$.subscribe((w: PlayerScore): void => console.log('winner:', w.player))",
+		"code": "",
 		"gotchas": [
 			"**Stalls on infinite sources** — requires completion.",
 			"**Errors on empty source** — no seed. Wrap with `defaultIfEmpty` if empty is acceptable.",
@@ -730,7 +730,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `max` on a finite stream when you want the **largest value** by natural order or a comparator. Prefer `min` for the symmetric case, or `reduce` for any aggregate that isn't simply min/max."
 	},
 	"merge": {
-		"code": "",
+		"code": "import { merge, fromEvent, Subject } from 'rxjs'\nimport { map } from 'rxjs/operators'\n\ninterface Action {\n\ttype: string\n\tpayload?: unknown\n}\n\n// Fan-in multiple action sources into one actions$ stream\nconst buttonClick$ = fromEvent<MouseEvent>(document.getElementById('btn')!, 'click').pipe(\n\tmap((): Action => ({ type: 'BUTTON_CLICKED' }))\n)\n\nconst keyPress$ = fromEvent<KeyboardEvent>(document, 'keydown').pipe(\n\tmap((e: KeyboardEvent): Action => ({ type: 'KEY_PRESSED', payload: e.key }))\n)\n\nconst wsMessage$ = new Subject<Action>()\n\nconst actions$ = merge(buttonClick$, keyPress$, wsMessage$)\n\nactions$.subscribe((action: Action) => {\n\tconsole.log('Action dispatched:', action)\n})",
 		"gotchas": [
 			"**`merge` vs `concat`** — `merge` subscribes to all sources immediately (concurrent). `concat` subscribes to them one at a time, waiting for each to complete. Using `merge` when ordering matters (e.g. init → fetch) will produce interleaved results.",
 			"**Output completes only when all sources complete** — if you merge a finite Observable with an infinite one (e.g. `interval()`), the merged output never completes. This is correct behaviour but surprises people who expect early completion.",
@@ -741,7 +741,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `merge` when you need a flat union of multiple streams and **order between sources does not matter**. Prefer `concat` when sources must be subscribed in sequence."
 	},
 	"mergeAll": {
-		"code": "",
+		"code": "import { of } from 'rxjs'\nimport { map, mergeAll } from 'rxjs/operators'\n\ninterface User {\n\tid: number\n\tname: string\n}\n\n// Higher-order stream: each source value maps to an Observable\nconst requests$ = of('alice', 'bob', 'charlie').pipe(\n\tmap((name: string) => fetchUser$(name))  // returns Observable<User>\n)\n\n// mergeAll subscribes to all three Observables concurrently\nconst users$ = requests$.pipe(mergeAll())\n\nusers$.subscribe((user: User) => console.log(user))",
 		"gotchas": [
 			"**`mergeAll` = `mergeMap(x => x)`** — `mergeMap` is the idiomatic shorthand. Use `mergeAll` only when you already have a higher-order Observable and do not need an explicit projection.",
 			"**Outer must emit Observables (or other `ObservableInput`)** — if the outer source emits plain values (not Observables, Promises, or arrays), `mergeAll` will throw. Use `mergeMap` with a projection instead.",
@@ -752,7 +752,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `mergeAll` when you already hold a higher-order Observable and want **all inners to run concurrently**. Prefer `mergeMap` when you can project and flatten in one step."
 	},
 	"mergeMap": {
-		"code": "",
+		"code": "import { fromEvent } from 'rxjs'\nimport { mergeMap, map } from 'rxjs/operators'\n\ninterface User {\n\tid: number\n\tname: string\n}\n\nconst userId$ = fromEvent<MouseEvent>(document.querySelectorAll('.user-card'), 'click').pipe(\n\tmap((e: MouseEvent) => Number((e.currentTarget as HTMLElement).dataset['userId']))\n)\n\n// Each click triggers a separate HTTP request; all run concurrently\nconst user$ = userId$.pipe(\n\tmergeMap((id: number) => fetchUser$(id))\n)\n\nuser$.subscribe((user: User) => {\n\tconsole.log('Loaded user:', user)\n})",
 		"gotchas": [
 			"**Use `switchMap` for search / live queries** — `mergeMap` keeps all inner subscriptions alive. For a search typeahead, a new search term should cancel the previous request; use `switchMap` instead.",
 			"**Response ordering is not guaranteed** — since all inner Observables run concurrently, their results arrive in completion order, not source order. If you need ordered results, use `concatMap`.",
@@ -764,7 +764,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `mergeMap` when every source value must be processed and **order of results does not matter**. Prefer `switchMap` for live queries, `concatMap` when ordering is required, and `exhaustMap` when overlapping requests must be prevented entirely."
 	},
 	"mergeMapTo": {
-		"code": "",
+		"code": "// Deprecated — do not use in new code\nimport { fromEvent } from 'rxjs'\nimport { mergeMapTo } from 'rxjs/operators'\n\nconst refresh$ = fromEvent(document.getElementById('refresh')!, 'click').pipe(\n\tmergeMapTo(fetchData$())\n)\n\n// Preferred replacement\nimport { fromEvent } from 'rxjs'\nimport { mergeMap } from 'rxjs/operators'\n\nconst refresh$ = fromEvent(document.getElementById('refresh')!, 'click').pipe(\n\tmergeMap(() => fetchData$())\n)",
 		"gotchas": [
 			"**Deprecated in RxJS 7, removed in RxJS 8** — do not use in new code. Migrate all existing uses to `mergeMap(() => inner$)`.",
 			"**Cold vs hot inner Observable** — if `innerObservable` is cold (e.g. an HTTP Observable), each source emission creates a new, independent execution. If it is hot (e.g. a `Subject`), all subscriptions share the same stream — behaviour differs significantly."
@@ -773,7 +773,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Do **not** use `mergeMapTo` in new code. Replace all occurrences with `mergeMap(() => innerObservable)`."
 	},
 	"mergeScan": {
-		"code": "",
+		"code": "import { fromEvent } from 'rxjs'\nimport { mergeScan, map } from 'rxjs/operators'\nimport { ajax } from 'rxjs/ajax'\n\ninterface Item {\n\tid: number\n\ttitle: string\n}\n\n// Pagination: each \"Load More\" click fetches the next page and appends to the accumulated list\nlet page = 0\n\nconst loadMore$ = fromEvent(document.getElementById('load-more')!, 'click')\n\nconst allItems$ = loadMore$.pipe(\n\tmergeScan(\n\t\t(acc: Item[], _event: Event) => {\n\t\t\tpage++\n\t\t\treturn ajax.getJSON<Item[]>(`/api/items?page=${page}`).pipe(\n\t\t\t\tmap((newItems: Item[]) => [...acc, ...newItems])\n\t\t\t)\n\t\t},\n\t\t[] as Item[]\n\t)\n)\n\nallItems$.subscribe((items: Item[]) => {\n\trenderList(items)\n})",
 		"gotchas": [
 			"**The `acc` passed to the next call is the *last* emission of the inner Observable** — intermediate emissions from the inner are forwarded to output subscribers but only the final emission is threaded as the new accumulator value. If the inner completes without emitting, `acc` is unchanged.",
 			"**`concurrent` default is `Infinity`** — multiple inner Observables may run in parallel. If accumulator calls must be sequential to avoid race conditions on shared state, set `concurrent: 1`.",
@@ -785,7 +785,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `mergeScan` when you need **`scan`-like accumulated state but each transition is async** (returns an Observable). For synchronous state use `scan`. For sequential async accumulation, use `mergeScan(fn, seed, 1)`."
 	},
 	"mergeWith": {
-		"code": "",
+		"code": "import { fromEvent, interval } from 'rxjs'\nimport { mergeWith, map, take } from 'rxjs/operators'\n\n// Combine a timer tick and a manual trigger into one stream\nconst tick$ = interval(1000).pipe(\n\tmap((): string => 'TICK')\n)\n\nconst manualTrigger$ = fromEvent(document.getElementById('trigger')!, 'click').pipe(\n\tmap((): string => 'MANUAL')\n)\n\nconst combined$ = tick$.pipe(\n\tmergeWith(manualTrigger$),\n\ttake(10)\n)\n\ncombined$.subscribe((event: string) => {\n\tconsole.log(event)  // 'TICK' every second, 'MANUAL' on click\n})",
 		"gotchas": [
 			"**RxJS 7+ only** — `mergeWith` does not exist in RxJS 6. For RxJS 6 compatibility, use the static `merge(source$, other$)` creation function.",
 			"**Completion behaviour** — if you pipe a finite Observable with `mergeWith(infiniteObs$)`, the result never completes. This catches people off guard when they expect the shorter stream to \"win\".",
@@ -795,7 +795,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `mergeWith` when you want to **merge another stream inside a `pipe()` chain** (RxJS 7+) and ordering between sources does not matter. Prefer the static `merge` when combining streams at the top level or when supporting RxJS 6."
 	},
 	"min": {
-		"code": "import { from, min, Observable } from 'rxjs'\n\n// Scenario: lowest price discovery — cheapest product in a finite catalogue stream\ninterface Product {\n\tid: string\n\tprice: number\n}\n\ndeclare const catalogue$: Observable<Product>\n\nconst cheapest$: Observable<Product> = catalogue$.pipe(\n\tmin((a: Product, b: Product): number => a.price - b.price)\n)\n\ncheapest$.subscribe((p: Product): void => console.log('cheapest:', p.id, p.price))",
+		"code": "",
 		"gotchas": [
 			"**Stalls on infinite sources** — like all `reduce`-family operators. Terminate with `takeUntil` / `take(n)`.",
 			"**Seedless — errors on empty source** — under the hood it's `reduce` without a seed. An empty source produces an `EmptyError`-style error. Wrap with `defaultIfEmpty` if empty is acceptable.",
@@ -807,7 +807,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `min` on a finite stream when you want the **smallest value**. Provide a comparator for objects. Prefer `max` for the symmetric case, or `reduce` for a custom aggregate that goes beyond min/max."
 	},
 	"multicast": {
-		"code": "",
+		"code": "import { interval, Subject, ReplaySubject } from 'rxjs'\nimport { multicast, take, tap } from 'rxjs/operators'\nimport type { ConnectableObservable } from 'rxjs'\n\n// Manual connect/disconnect control with a plain Subject\nconst source$ = interval(500).pipe(\n\ttake(6),\n\ttap((n: number) => console.log('source tick', n))\n)\n\nconst connectable$ = source$.pipe(\n\tmulticast(new Subject<number>())\n) as ConnectableObservable<number>\n\n// Nothing happens yet — source not subscribed\nconst sub1 = connectable$.subscribe((n: number) => console.log('sub1:', n))\nconst sub2 = connectable$.subscribe((n: number) => console.log('sub2:', n))\n\n// Source subscription starts now — both sub1 and sub2 share it\nconst connection = connectable$.connect()\n\n// Manually disconnect after 2 seconds\nsetTimeout(() => connection.unsubscribe(), 2000)",
 		"gotchas": [
 			"**`multicast` is deprecated in RxJS 7** — the RxJS team replaced it with `connectable()` (for no-selector usage) and the `connect()` operator (for selector usage). New code should not use `multicast()` directly. Use `share()`, `shareReplay()`, or `connectable()` depending on the use case.",
 			"**`connect()` must be called manually** — unlike `share()`, a `ConnectableObservable` from `multicast()` does nothing until you call `.connect()`. Forgetting this call is the single most common mistake — subscribers exist but the source never fires.",
@@ -819,7 +819,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `multicast()` only when maintaining RxJS 5/6 code or when you need the `selector` overload's scoped multicast pattern. In all new RxJS 7 code, prefer `connectable()` for explicit connect control, or `share()` / `shareReplay()` for automatic refcounting."
 	},
 	"NEVER": {
-		"code": "import { NEVER, merge, fromEvent, Observable } from 'rxjs'\n\n// Scenario: conditional pause — effectively disable a branch by swapping it for NEVER\nconst isPaused: { value: boolean } = { value: false }\n\ndeclare const ticks$: Observable<number>\n\nconst clicks$: Observable<Event> = fromEvent(document, 'click')\n\nconst maybeTicking$: Observable<number | Event> = merge(\n\tclicks$,\n\tisPaused.value ? NEVER : ticks$\n)",
+		"code": "",
 		"gotchas": [
 			"**`NEVER` is a constant, not a function** — `NEVER()` is a type error. Use the bare identifier.",
 			"**Subscriptions to `NEVER` never tear down on their own** — if you don't call `unsubscribe()`, the subscription stays open forever. Usually benign (no resource held), but tracks of subscriptions can still accumulate.",
@@ -831,7 +831,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `NEVER` when you need an Observable that **does absolutely nothing — no value, no error, no completion**. Useful in tests, conditional pauses, and `merge`/`combine` branch disabling. Prefer `EMPTY` for silent completion."
 	},
 	"observeOn": {
-		"code": "import { interval, observeOn, animationFrameScheduler, Observable } from 'rxjs'\n\n// Scenario: animation smoothness — observe each tick in a repaint frame\nconst animationProgress$: Observable<number> = interval(10).pipe(\n\tobserveOn(animationFrameScheduler)\n)\n\nanimationProgress$.subscribe((val: number): void => {\n\tdocument.getElementById('bar')!.style.height = `${val % 200}px`\n})",
+		"code": "",
 		"gotchas": [
 			"**Doesn't change the source's own scheduling** — `observeOn` reschedules the *arrival* of notifications at downstream, not the source's internal work. An `interval(10, asyncScheduler)` keeps its 10ms timer; `observeOn(animationFrameScheduler)` only affects when the subscriber is called.",
 			"**Anti-pattern: chunking synchronous bursts** — using `observeOn(asyncScheduler)` on a very fast synchronous source to \"spread out\" emissions is wasteful — it schedules per-emission, creating micro-task pressure. For that, inject the scheduler into the source itself.",
@@ -843,7 +843,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `observeOn(scheduler)` when you want downstream consumers to receive notifications on a **specific scheduler** (animation frames, async queue) regardless of the source's own scheduling. Prefer `subscribeOn` for subscription-time scheduling, or `delay` when errors should not be delayed."
 	},
 	"of": {
-		"code": "import { of, catchError, Observable } from 'rxjs'\n\n// Scenario: fallback in catchError — API failure yields a typed default\ninterface Response {\n\tdata: number[]\n}\n\ndeclare const api$: Observable<Response>\n\nconst safe$: Observable<Response> = api$.pipe(\n\tcatchError((): Observable<Response> => of({ data: [] }))\n)",
+		"code": "",
 		"gotchas": [
 			"**Does not flatten** — `of([1, 2, 3])` emits **one** value (the array), not three. Use `from([1, 2, 3])` for per-element emission.",
 			"**Synchronous** — all values emit before `subscribe()` returns. If a subscriber unsubscribes before subscribe returns (e.g., via teardown returned from the observer), subsequent values are skipped.",
@@ -854,7 +854,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `of(a, b, c)` when you need **a finite synchronous sequence of known literal values**. Use `from(array)` to flatten collections, `range` for integers, or `EMPTY` for a no-emission completion."
 	},
 	"onErrorResumeNextWith": {
-		"code": "import { onErrorResumeNextWith, Observable, defer, from } from 'rxjs'\n\n// Scenario: fallback mirror chain — try each source sequentially, swallow errors\ndeclare function fetchFromMirror(name: string): Observable<string>\n\nconst fromCdnA$: Observable<string> = fetchFromMirror('cdn-a')\nconst fromCdnB$: Observable<string> = fetchFromMirror('cdn-b')\nconst fromOrigin$: Observable<string> = fetchFromMirror('origin')\n\nconst resilient$: Observable<string> = fromCdnA$.pipe(\n\tonErrorResumeNextWith(fromCdnB$, fromOrigin$)\n)\n\nresilient$.subscribe((data: string): void => console.log(data))\n// All fallbacks play in order; errors from earlier sources are silent.",
+		"code": "",
 		"gotchas": [
 			"**Errors are completely swallowed** — the subscriber's `error` callback will **never** fire, even if every source errors. For diagnostic logging, add `tap({ error })` upstream of each source.",
 			"**Runs every fallback, not just on error** — even if the source completes *successfully*, the next fallback is still subscribed. If you only want fallbacks on error, use `catchError` chained.",
@@ -866,7 +866,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `onErrorResumeNextWith` when you want to **play a sequence of sources, swallowing errors at each boundary**. Prefer `catchError` for error-only fallback, or `concatWith` when errors should halt the sequence."
 	},
 	"operate": {
-		"code": "import { Observable, operate } from 'rxjs'\nimport type { OperatorFunction } from 'rxjs'\n\n// Scenario: custom operator — emit only every nth value from the source\nfunction everyNth<T>(n: number): OperatorFunction<T, T> {\n\treturn (source$: Observable<T>): Observable<T> =>\n\t\tnew Observable<T>((destination) => {\n\t\t\tlet count = 0\n\n\t\t\tsource$.subscribe(\n\t\t\t\toperate({\n\t\t\t\t\tdestination,\n\t\t\t\t\tnext: (value: T): void => {\n\t\t\t\t\t\tif (++count % n === 0) {\n\t\t\t\t\t\t\tdestination.next(value)\n\t\t\t\t\t\t}\n\t\t\t\t\t\t// values that don't match are dropped — intentional lossiness\n\t\t\t\t\t},\n\t\t\t\t\t// no error/complete override → both forward to destination automatically\n\t\t\t\t})\n\t\t\t)\n\t\t})\n}\n\n// Usage in a pipeline\nimport { interval } from 'rxjs'\nimport { take } from 'rxjs'\n\nconst everyThird$ = interval(200).pipe(\n\teveryNth(3),\n\ttake(4)\n)\n\neveryThird$.subscribe((v: number): void => console.log(v))\n// logs: 2, 5, 8, 11   (0-based index values 2, 5, 8, 11 pass the modulo check)",
+		"code": "",
 		"gotchas": [
 			"**Never use `new Subscriber(destination)` directly** — the `Subscriber` constructor is deprecated for direct use. Only `operate()` is the public contract. `new Subscriber()` without the overrides argument does not route override-callback errors to `destination.error()`; `operate()` does.",
 			"**`destination.add(this)` fires inside `operate()`, before `source.subscribe()`** — this is the invariant that makes downstream unsubscribe propagate upstream. If you call `source.subscribe()` first and then try to wire teardown manually, you lose the guarantee for synchronous sources: the source may have already run and the teardown opportunity has passed.",
@@ -878,7 +878,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `operate()` whenever you are **authoring a new pipeable operator** and need a `Subscriber` that is correctly wired into the downstream teardown chain. Never create a `Subscriber` directly — and never subscribe to a source before calling `operate()`, or the teardown chain will fail for synchronous sources."
 	},
 	"pairwise": {
-		"code": "import { fromEvent, map, pairwise, Observable } from 'rxjs'\n\n// Scenario: scroll-direction detection\ntype ScrollDirection = 'up' | 'down' | 'none'\n\nconst direction$: Observable<ScrollDirection> = fromEvent(window, 'scroll').pipe(\n\tmap((): number => window.scrollY),\n\tpairwise(),\n\tmap(([prev, curr]: [number, number]): ScrollDirection => {\n\t\tif (curr > prev) return 'down'\n\t\tif (curr < prev) return 'up'\n\t\treturn 'none'\n\t})\n)",
+		"code": "",
 		"gotchas": [
 			"**Swallows the very first emission** — if you need the first value in the output too, prepend with `startWith(initialValue)` so `pairwise` sees a synthetic predecessor: `source$.pipe(startWith(null), pairwise())` and then handle the `null` case in the consumer.",
 			"**Each subscriber has its own `prev`** — because `pairwise` is unicast, a late subscriber on a multicasted source (via `share()`) only sees pairs from values that arrive *after* it subscribes, not the last source value paired with its first seen value.",
@@ -889,7 +889,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `pairwise` when you need to compare each value with **its immediate predecessor** as a tuple. Prefer `bufferCount(n, 1)` for wider sliding windows, or `scan` when the comparison needs more than the prior value."
 	},
 	"partition": {
-		"code": "import { fromEvent, partition, Observable } from 'rxjs'\n\n// Scenario: match/no-match routing — clicks on a specific element vs elsewhere\nconst clicks$: Observable<MouseEvent> = fromEvent<MouseEvent>(document, 'click')\n\nconst [onDivs$, elsewhere$]: [Observable<MouseEvent>, Observable<MouseEvent>] = partition(\n\tclicks$,\n\t(e: MouseEvent): boolean => (e.target as HTMLElement).tagName === 'DIV'\n)\n\nonDivs$.subscribe((e: MouseEvent): void => console.log('DIV clicked:', e))\nelsewhere$.subscribe((e: MouseEvent): void => console.log('Other clicked:', e))",
+		"code": "",
 		"gotchas": [
 			"**Subscribes source twice without `share`** — each output Observable triggers its own subscription. For hot/expensive sources, wrap the source in `share()` before partitioning. The static creator has the same behaviour.",
 			"**Deprecated as an operator form** — the pipe form will be removed in a future version. Migrate to the `partition(source, predicate)` static creator imported directly from `'rxjs'`.",
@@ -901,7 +901,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `partition` when you need **two parallel branches from one source by a boolean predicate**. In new code, always use the static `partition()` creator from `'rxjs'`. For more than two categories, use `groupBy`. For a single branch, use `filter`."
 	},
 	"publish": {
-		"code": "",
+		"code": "import { interval } from 'rxjs'\nimport { publish, take, tap } from 'rxjs/operators'\nimport type { ConnectableObservable } from 'rxjs'\n\n// Shared interval — one source, two consumers\nconst source$ = interval(300).pipe(\n\ttake(5),\n\ttap((n: number) => console.log('source:', n))\n)\n\nconst hot$ = source$.pipe(\n\tpublish()\n) as ConnectableObservable<number>\n\nhot$.subscribe((n: number) => console.log('A:', n))\nhot$.subscribe((n: number) => console.log('B:', n))\n\n// Source subscription starts here\nconst connection = hot$.connect()\n\n// RxJS 7 equivalent using connectable():\nimport { connectable, Subject } from 'rxjs'\n\nconst shared$ = connectable(source$, {\n\tconnector: () => new Subject<number>()\n})\nshared$.subscribe((n: number) => console.log('A:', n))\nshared$.connect()",
 		"gotchas": [
 			"**`publish()` is deprecated in RxJS 7** — the team replaced it with `connectable()` (no selector) and the `connect()` operator (with selector). New code should use those instead. `share()` is the right default for most cases.",
 			"**`connect()` must be called manually** — a `ConnectableObservable` from `publish()` does not subscribe to the source until `.connect()` is called. All subscribers attached before that call will wait silently, getting no values until connect fires.",
@@ -912,7 +912,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `publish()` only in RxJS 5/6 codebases or when migrating. In RxJS 7, replace with `share()` for automatic refcounting, or `connectable()` when you need explicit `connect()` control."
 	},
 	"publishBehavior": {
-		"code": "",
+		"code": "import { interval } from 'rxjs'\nimport { publishBehavior, map, take } from 'rxjs/operators'\nimport type { ConnectableObservable } from 'rxjs'\n\ntype Status = 'idle' | 'loading' | number\n\n// Simulates a live count that starts at 'idle' before source emits\nconst count$ = interval(1000).pipe(\n\ttake(3),\n\tmap((n: number): number => n + 1),\n\tpublishBehavior<Status>('idle')\n) as ConnectableObservable<Status>\n\ncount$.connect()\n\n// Sub immediately gets 'idle', then 1, 2, 3\ncount$.subscribe((v: Status) => console.log('A:', v))\n\n// Sub 500ms late gets current value synchronously (still 'idle' or 1)\nsetTimeout(() => {\n\tcount$.subscribe((v: Status) => console.log('B (late):', v))\n}, 500)\n\n// RxJS 7 equivalent using connectable():\nimport { connectable, BehaviorSubject } from 'rxjs'\n\nconst shared$ = connectable(interval(1000).pipe(take(3)), {\n\tconnector: () => new BehaviorSubject<number>(0)\n})\nshared$.connect()",
 		"gotchas": [
 			"**`publishBehavior()` is deprecated in RxJS 7** — use `connectable(source$, { connector: () => new BehaviorSubject(v) })` for explicit connect control, or a plain `BehaviorSubject` with manual `.next()` if you need imperative writes.",
 			"**`connect()` must be called manually** — the `ConnectableObservable` does not subscribe to the source until `.connect()` is called. Subscribers before that call receive `initialValue` synchronously but then stall waiting for source emissions that never arrive.",
@@ -923,7 +923,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `publishBehavior(v)` only in RxJS 5/6 codebases or when migrating. In RxJS 7, use `connectable(source$, { connector: () => new BehaviorSubject(v) })` for explicit connect control, or a plain `BehaviorSubject` when you need the `.value` accessor and imperative writes."
 	},
 	"publishLast": {
-		"code": "",
+		"code": "import { from } from 'rxjs'\nimport { publishLast, tap } from 'rxjs/operators'\nimport type { ConnectableObservable } from 'rxjs'\n\ninterface SaveResult { id: string; timestamp: number }\n\n// Simulate an async save that multiple components observe\nconst save$: Observable<SaveResult> = from(\n\tfetch('/api/save', { method: 'POST' }).then((r): Promise<SaveResult> => r.json())\n).pipe(\n\ttap(() => console.log('save executed once')),\n\tpublishLast()\n) as ConnectableObservable<SaveResult>\n\n// Start the save before any UI has subscribed\nsave$.connect()\n\n// UI components subscribe — both get the result when the save finishes\nsave$.subscribe((result: SaveResult) => console.log('Panel A:', result))\nsave$.subscribe((result: SaveResult) => console.log('Panel B:', result))\n\n// RxJS 7 equivalent — last() + shareReplay(1) is the idiomatic replacement:\nimport { last, shareReplay } from 'rxjs'\n\nconst sharedSave$ = from(fetch('/api/save').then(r => r.json())).pipe(\n\tlast(),\n\tshareReplay(1)\n)",
 		"gotchas": [
 			"**`publishLast()` is deprecated in RxJS 7** — use `connectable(source$, { connector: () => new AsyncSubject() })` for explicit connect, or `last() + shareReplay(1)` for the common pattern. New code should not use `publishLast()`.",
 			"**Stalls completely on infinite sources** — because `publishLast` waits for source completion, using it with `interval()`, `fromEvent()`, or any non-terminating Observable means it will never emit. The `AsyncSubject` inside silently buffers the latest value but never delivers it.",
@@ -934,7 +934,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `publishLast()` only in RxJS 5/6 codebases or when migrating. In RxJS 7, use `last() + shareReplay(1)` for the common case, or `connectable(source$, { connector: () => new AsyncSubject() })` when you need explicit `connect()` control."
 	},
 	"publishReplay": {
-		"code": "",
+		"code": "import { timer } from 'rxjs'\nimport { publishReplay, take, map } from 'rxjs/operators'\nimport type { ConnectableObservable } from 'rxjs'\n\ninterface Config {\n\ttheme: string\n\tlocale: string\n}\n\n// Simulate a config fetch that must be shared and replayed\nconst configFetch$ = timer(500).pipe(\n\ttake(1),\n\tmap((): Config => ({ theme: 'dark', locale: 'en' }))\n)\n\nconst config$ = configFetch$.pipe(\n\tpublishReplay(1)\n) as ConnectableObservable<Config>\n\n// Start the source immediately — before consumers exist\nconfig$.connect()\n\n// Component A subscribes after the response has already arrived\nsetTimeout(() => {\n\tconfig$.subscribe((cfg: Config) => {\n\t\tconsole.log('Component A got config:', cfg)  // receives replay\n\t})\n}, 1000)\n\n// RxJS 7 equivalent using connectable():\nimport { connectable, ReplaySubject } from 'rxjs'\n\nconst shared$ = connectable(configFetch$, {\n\tconnector: () => new ReplaySubject<Config>(1)\n})\nshared$.connect()",
 		"gotchas": [
 			"**`publishReplay()` is deprecated in RxJS 7** — use `connectable(source$, { connector: () => new ReplaySubject(n) })` for explicit connect control, or `shareReplay(n)` for automatic refcounting. These are the idiomatic RxJS 7 equivalents.",
 			"**`refCount()` does not create a fresh ReplaySubject on reconnect** — when subscriber count drops to zero and rises again, the same `ReplaySubject` is reused. If the source completed, new subscribers get the replayed values followed by an immediate complete. Use a subject factory with `multicast(() => new ReplaySubject(n))` or `connectable()` with `resetOnDisconnect: true` to avoid this.",
@@ -945,7 +945,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `publishReplay(n)` only in RxJS 5/6 codebases or when migrating. In RxJS 7, use `shareReplay(n)` for automatic refcounting, or `connectable(source$, { connector: () => new ReplaySubject(n) })` for explicit connect control."
 	},
 	"race": {
-		"code": "import { race, Observable } from 'rxjs'\n\n// Scenario: multi-mirror fetch — subscribe to all, take the fastest\ndeclare function fetchFromMirror(name: string): Observable<string>\n\nconst cdnEu$: Observable<string> = fetchFromMirror('cdn-eu')\nconst cdnUs$: Observable<string> = fetchFromMirror('cdn-us')\nconst origin$: Observable<string> = fetchFromMirror('origin')\n\nconst fastest$: Observable<string> = race(cdnEu$, cdnUs$, origin$)\n\nfastest$.subscribe((data: string): void => console.log('got:', data))",
+		"code": "",
 		"gotchas": [
 			"**All sources subscribe eagerly** — every input starts running at subscribe time. If the side effects are expensive, this can multiply load. Use `defer` to delay construction, but the subscription itself will still happen.",
 			"**Errors are valid \"first notifications\"** — a source that errors instantly wins the race and errors the output. Wrap individual sources with `catchError` if losing-via-error shouldn't propagate.",
@@ -957,7 +957,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `race(...sources)` when you want **whichever source emits first to drive the output**, and the rest should be discarded. Prefer `timeout` for deadline enforcement, `merge` for combining all streams, or `raceWith` when composing inside a pipe."
 	},
 	"raceWith": {
-		"code": "import { interval, map, raceWith, Observable } from 'rxjs'\n\n// Scenario: multi-endpoint race — subscribe to mirror endpoints, take whichever responds first\ndeclare function fetchFromMirror(name: string): Observable<string>\n\nconst fast$: Observable<string> = fetchFromMirror('cdn-eu')\nconst medium$: Observable<string> = fetchFromMirror('cdn-us')\nconst slow$: Observable<string> = fetchFromMirror('origin')\n\nconst fastest$: Observable<string> = fast$.pipe(\n\traceWith(medium$, slow$)\n)\n\nfastest$.subscribe((data: string): void => console.log('got:', data))",
+		"code": "",
 		"gotchas": [
 			"**An error from the fastest stream wins too** — the winner is whoever sends *any* notification first, including `error`. If a source errors instantly and another would have succeeded, the output errors. Wrap individual losers with `catchError` if their errors shouldn't win the race.",
 			"**Losers are subscribed eagerly** — every auxiliary is subscribed at subscription time. Side effects (HTTP, WebSocket connect) fire on all of them. If only the winner should do work, use `defer` wrappers and cancel aggressively.",
@@ -969,7 +969,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `raceWith` when you want **exactly one of several streams to drive the output** based on which emits first. Prefer `merge` when you want all emissions, or `timeout` when you just want to error on inactivity."
 	},
 	"range": {
-		"code": "import { range, concatMap, Observable } from 'rxjs'\n\n// Scenario: pagination driver — fetch pages 1..totalPages sequentially\ndeclare function fetchPage(n: number): Observable<string[]>\n\nconst totalPages = 5\n\nconst allPages$: Observable<string[]> = range(1, totalPages).pipe(\n\tconcatMap((page: number): Observable<string[]> => fetchPage(page))\n)\n\nallPages$.subscribe((items: string[]): void => console.log('page:', items))",
+		"code": "",
 		"gotchas": [
 			"**Count, not end — the second argument is how many, not the last value** — `range(1, 5)` emits `1..5`, not `1..4`. Off-by-one bugs are common.",
 			"**Non-positive count returns `EMPTY`** — `range(10, 0)` or `range(5, -3)` produces no values. Guard if input might be non-positive.",
@@ -981,7 +981,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `range(start, count)` when you want **a bounded synchronous sequence of sequential integers**. Prefer `generate` for non-linear progressions, `interval` for time-spaced emissions, or `of(...)` for heterogeneous explicit values."
 	},
 	"reduce": {
-		"code": "import { interval, map, take, reduce, Observable } from 'rxjs'\n\n// Scenario: sum — compute the total of the first ten 1-second ticks\nconst total$: Observable<number> = interval(1000).pipe(\n\ttake(10),\n\tmap((i: number): number => i + 1),\n\treduce((acc: number, x: number): number => acc + x, 0)\n)\n\ntotal$.subscribe((sum: number): void => console.log('sum =', sum))\n// After 10 seconds: sum = 55",
+		"code": "",
 		"gotchas": [
 			"**Never emits on infinite sources** — must see completion. Pair with `take(n)`, `takeUntil`, or `first(predicate)` to ensure the stream terminates.",
 			"**Memory grows with referenced values** — if your accumulator retains references (e.g. `acc.push(x)` into an array), memory grows with the stream length. For simple numeric reductions it's O(1); for collection building it's O(n).",
@@ -993,7 +993,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `reduce` when you want **the single final fold result** of a finite stream. Prefer `scan` for live incremental updates, or specialised operators (`count`, `toArray`, `min`, `max`) when they express the intent more directly."
 	},
 	"repeat": {
-		"code": "import { defer, repeat, Observable } from 'rxjs'\n\n// Scenario: polling loop — re-run a one-shot HTTP fetch every 5 seconds\ninterface Status { ok: boolean }\n\ndeclare function getStatus(): Promise<Status>\n\nconst polled$: Observable<Status> = defer((): Promise<Status> => getStatus()).pipe(\n\trepeat({ count: Infinity, delay: 5000 })\n)\n\npolled$.subscribe((s: Status): void => console.log('status:', s.ok))",
+		"code": "",
 		"gotchas": [
 			"**Does not catch errors** — if the source errors, the output errors; no repeat occurs. Combine with `retry` if you want both error recovery *and* periodic re-subscription.",
 			"**Hot sources don't behave the way you might hope** — re-subscribing to a hot source (a `Subject`, a live WebSocket) doesn't \"restart\" it; it just attaches a new subscriber. For restartability, use `defer` to create a fresh cold Observable each cycle.",
@@ -1005,7 +1005,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `repeat` when you want to **re-run a finite source repeatedly** (polling, looping playback) and errors should stop the pipeline. Prefer `retry` for error recovery, or `repeat({ delay: () => notifier$ })` for notifier-driven timing (replaces `repeatWhen`)."
 	},
 	"repeatWhen": {
-		"code": "import { of, fromEvent, repeatWhen, repeat, Observable } from 'rxjs'\n\n// Scenario (DEPRECATED pattern): repeat a one-shot load on each click\nconst data$: Observable<string> = of('Repeat message')\nconst documentClick$: Observable<Event> = fromEvent(document, 'click')\n\n// OLD — repeatWhen\nconst legacyRepeated$: Observable<string> = data$.pipe(\n\trepeatWhen((): Observable<Event> => documentClick$)\n)\n\n// NEW — preferred, same behaviour via repeat({ delay })\nconst modernRepeated$: Observable<string> = data$.pipe(\n\trepeat({ delay: (): Observable<Event> => documentClick$ })\n)\n\nmodernRepeated$.subscribe((msg: string): void => console.log(msg))",
+		"code": "",
 		"gotchas": [
 			"**Deprecated — migrate to `repeat({ delay })`** — the notifier-style API is superseded. `repeat({ delay: () => notifier$ })` is the direct replacement with simpler semantics.",
 			"**Notifier completion completes the output** — if the notifier Observable completes (without emitting), the repetition loop ends and the output completes too. Easy to bite you with `take(1)` on the notifier.",
@@ -1017,7 +1017,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "**Don't use `repeatWhen` in new code.** Use `repeat({ delay: () => notifier$ })` — it's the supported replacement with identical behaviour and a cleaner API."
 	},
 	"ReplaySubject": {
-		"code": "",
+		"code": "import { ReplaySubject } from 'rxjs'\nimport { map, distinctUntilChanged } from 'rxjs/operators'\n\ninterface LogEntry {\n\tlevel: 'info' | 'warn' | 'error'\n\tmessage: string\n\ttimestamp: number\n}\n\n// Keep the last 100 log entries for any log viewer that opens later\nconst log$ = new ReplaySubject<LogEntry>(100)\n\nfunction logMessage(level: LogEntry['level'], message: string): void {\n\tlog$.next({ level, message, timestamp: Date.now() })\n}\n\n// A log viewer component subscribing late gets the last 100 entries immediately\nlog$.subscribe((entry: LogEntry) => appendToLogView(entry))\n\nlogMessage('info', 'App started')\nlogMessage('warn', 'Config missing — using defaults')",
 		"gotchas": [
 			"**`ReplaySubject(1)` vs `BehaviorSubject`** — `ReplaySubject(1)` has no initial value (new subscribers wait for the first push), while `BehaviorSubject` always has a value from construction. Use `ReplaySubject(1)` when \"no value yet\" is valid; use `BehaviorSubject` when there must always be a current value.",
 			"**Unbounded buffer with `new ReplaySubject()` (no args)** — the default `bufferSize` is `Infinity`, meaning all values ever pushed are retained. On a long-running stream this is a memory leak. Always specify an explicit `bufferSize` or `windowTime`.",
@@ -1028,7 +1028,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `ReplaySubject(n)` when **late subscribers must receive the last N values** as a catch-up replay. Use `BehaviorSubject` when exactly one current value is always required from construction, and `ReplaySubject(1)` when current-value semantics are needed but an initial value would be artificial."
 	},
 	"retry": {
-		"code": "",
+		"code": "import { ajax } from 'rxjs/ajax'\nimport { retry, catchError } from 'rxjs/operators'\nimport { of } from 'rxjs'\n\ninterface User {\n\tid: number\n\tname: string\n}\n\n// Retry up to 3 times on network error before giving up\nconst user$ = ajax.getJSON<User>('/api/user/1').pipe(\n\tretry(3),\n\tcatchError((err: Error) => {\n\t\tconsole.error('All retries exhausted:', err.message)\n\t\treturn of(null)\n\t})\n)\n\nuser$.subscribe((user: User | null) => {\n\tif (user) renderUser(user)\n})",
 		"gotchas": [
 			"**Always put `retry` inside the inner Observable of flattening operators** — if you place `retry` on the outer `actions$` stream, a single error terminates the entire effect pipeline permanently. Wrap `retry` (and `catchError`) inside the `switchMap`/`mergeMap` projection so only the failed inner is retried, not the whole stream.",
 			"**The source is re-subscribed from scratch on each retry** — cold Observables (HTTP requests, timers) re-execute entirely. Hot Observables (Subjects, shared streams) may not replay missed values. For HTTP, this is usually correct; for hot sources, consider whether re-subscription is the right recovery strategy.",
@@ -1040,7 +1040,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `retry(n)` for **simple fixed-count retry with optional timed backoff** (RxJS 7+ `RetryConfig`). Use `retryWhen` for complex retry logic in RxJS 6, or when retry conditions depend on the error type. Always scope `retry` to the inner Observable in effect pipelines."
 	},
 	"retryWhen": {
-		"code": "",
+		"code": "// RxJS 6 pattern — retryWhen with exponential backoff\nimport { ajax } from 'rxjs/ajax'\nimport { retryWhen, delayWhen, take, tap } from 'rxjs/operators'\nimport { timer, throwError, iif } from 'rxjs'\n\ninterface ApiData {\n\titems: string[]\n}\n\nconst data$ = ajax.getJSON<ApiData>('/api/data').pipe(\n\tretryWhen((errors$) =>\n\t\terrors$.pipe(\n\t\t\t// Retry up to 3 times with exponential backoff\n\t\t\tdelayWhen((_err: unknown, index: number) => timer(Math.min(1000 * 2 ** index, 16_000))),\n\t\t\ttake(3),\n\t\t\t// After take(3) completes the notifier, which stops retrying\n\t\t)\n\t)\n)",
 		"gotchas": [
 			"**Deprecated in RxJS 7, removed in RxJS 8** — migrate to `retry({ count, delay })` for new code. For complex conditional logic, `retry` with a `delay` function receives the error and retry count, covering most `retryWhen` patterns.",
 			"**Notifier completing vs erroring** — when the notifier completes (e.g. via `take(3)`), `retryWhen` completes the output stream rather than propagating the original error. This surprises people who expect the last error to propagate. To propagate the error after exhausting retries, use `throwError` in the notifier after the count is reached.",
@@ -1052,7 +1052,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "In **RxJS 7+**, prefer `retry({ count, delay })` over `retryWhen`. Use `retryWhen` only for **RxJS 6 compatibility** or for complex notifier logic (conditional retry by error type) that `RetryConfig` cannot express. Always scope either operator to the inner Observable in effect pipelines."
 	},
 	"sample": {
-		"code": "",
+		"code": "import { fromEvent, animationFrames } from 'rxjs'\nimport { sample, map } from 'rxjs/operators'\n\ninterface MousePosition {\n\tx: number\n\ty: number\n}\n\n// Sample the latest mouse position on every animation frame — smooth rendering\n// without creating a separate subscription to the high-frequency mousemove event\nconst mouseMove$ = fromEvent<MouseEvent>(document, 'mousemove').pipe(\n\tmap((e: MouseEvent): MousePosition => ({ x: e.clientX, y: e.clientY }))\n)\n\nconst rendered$ = mouseMove$.pipe(\n\tsample(animationFrames())\n)\n\nrendered$.subscribe((pos: MousePosition) => moveSprite(pos))",
 		"gotchas": [
 			"**`sample` vs `withLatestFrom`** — `withLatestFrom(secondary$)` attaches the latest secondary value to each *primary* emission; `sample(notifier$)` emits the latest *source* value on each *notifier* emission. They are opposite perspectives of the same relationship — choose based on which stream should drive the output.",
 			"**No emission if source has not produced a new value since last sample** — `sample` silently skips notifier ticks when no new source value has arrived. This differs from `sampleTime`, which also skips silently. If you need a default value on silent ticks, use `combineLatest` with a clock Observable instead.",
@@ -1064,7 +1064,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `sample` when the **emission clock is fully external** — driven by a notifier Observable independent of source activity. Use `sampleTime` for a constant-interval clock. Use `withLatestFrom` when the primary stream should drive output and the secondary is just context."
 	},
 	"sampleTime": {
-		"code": "",
+		"code": "import { fromEvent, interval } from 'rxjs'\nimport { sampleTime, map, tap, withLatestFrom } from 'rxjs/operators'\n\n// Scenario: GPS tracker — position updates arrive rapidly,\n// but we only render the map marker every 500ms\n\ninterface Position {\n\tlat: number\n\tlng: number\n}\n\nconst rawPosition$: Observable<Position> = fromGeolocationAPI()\n\n// Render at most twice per second regardless of update frequency\nconst sampledPosition$ = rawPosition$.pipe(\n\tsampleTime(500),\n)\n\nsampledPosition$.subscribe(pos => renderMapMarker(pos))\n\n// ---\n\n// Scenario: live telemetry dashboard — sample multiple streams\n// at the same rate and combine for a single render pass\n\nconst cpuUsage$ = interval(50).pipe(map(() => readCpuUsage()))\nconst memUsage$ = interval(30).pipe(map(() => readMemUsage()))\n\nconst dashboardTick$ = interval(1000)\n\nconst dashboard$ = dashboardTick$.pipe(\n\twithLatestFrom(cpuUsage$, memUsage$),\n\tmap(([_, cpu, mem]) => ({ cpu, mem, timestamp: Date.now() })),\n\ttap(snapshot => console.log('dashboard snapshot:', snapshot)),\n)\n\ndashboard$.subscribe(renderDashboard)",
 		"gotchas": [
 			"**No tick emission when source is silent** — `sampleTime` only emits if the source has produced at least one value since the last tick. If the source is quiet for an entire period, that tick is silently skipped. Do not rely on `sampleTime` to produce a guaranteed periodic heartbeat — use `interval` + `withLatestFrom` for that instead.",
 			"**The very last source value before completion may be missed** — If the source completes just after a tick and before the next one, the final value is lost. For finite streams where the last value matters, use `last()` or `takeLast(1)` instead.",
@@ -1076,7 +1076,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `sampleTime` when you need a **fixed-rate periodic snapshot** of a high-frequency stream and only the most recent value at each tick matters. Prefer `auditTime` when you want the latest value after a burst of activity, or `bufferTime` when you cannot afford to lose any values between ticks."
 	},
 	"scan": {
-		"code": "",
+		"code": "import { Subject } from 'rxjs'\nimport { scan, startWith, distinctUntilChanged, shareReplay } from 'rxjs/operators'\n\n// --- MVU pattern: Action → State via scan + reducer ---\n\ninterface Musician {\n\tid: string\n\tname: string\n}\n\ntype Action =\n\t| { type: 'ADD'; payload: Musician }\n\t| { type: 'REMOVE'; payload: { id: string } }\n\t| { type: 'RESET' }\n\ninterface State {\n\tmusicians: Musician[]\n\tcount: number\n}\n\nconst initialState: State = { musicians: [], count: 0 }\n\nfunction reducer(state: State, action: Action): State {\n\tswitch (action.type) {\n\t\tcase 'ADD':\n\t\t\treturn {\n\t\t\t\tmusicians: [...state.musicians, action.payload],\n\t\t\t\tcount: state.count + 1,\n\t\t\t}\n\t\tcase 'REMOVE':\n\t\t\treturn {\n\t\t\t\tmusicians: state.musicians.filter(m => m.id !== action.payload.id),\n\t\t\t\tcount: state.count - 1,\n\t\t\t}\n\t\tcase 'RESET':\n\t\t\treturn initialState\n\t}\n}\n\nconst action$ = new Subject<Action>()\n\n// scan replaces NgRx Store: pure reducer, emits every intermediate state\nconst state$ = action$.pipe(\n\tscan(reducer, initialState),\n\tstartWith(initialState),\n\tdistinctUntilChanged(),\n\tshareReplay(1),\n)\n\n// Derived state — no extra store selectors needed\nconst count$ = state$.pipe(\n\tscan((acc, state) => state.count, 0),\n\tdistinctUntilChanged(),\n)\n\n// Dispatch\naction$.next({ type: 'ADD', payload: { id: '1', name: 'Miles Davis' } })\naction$.next({ type: 'ADD', payload: { id: '2', name: 'John Coltrane' } })\naction$.next({ type: 'REMOVE', payload: { id: '1' } })",
 		"gotchas": [
 			"**No seed = first value is silently used as seed** — Without a seed, `scan` passes the first source value directly to the output and starts accumulating from the second. This means the accumulator runs `n-1` times for `n` values. Always provide an explicit seed to avoid off-by-one bugs and type errors.",
 			"**Accumulator must be pure** — `scan` is called once per emission. If the accumulator mutates the `acc` object (e.g. `acc.items.push(v)`) instead of returning a new reference, `distinctUntilChanged()` downstream will never detect changes, and change-detection in frameworks will miss updates. Always return a new object: `{ ...acc, items: [...acc.items, v] }`.",
@@ -1088,7 +1088,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `scan` when you need a **running accumulated state that updates on every emission** — particularly as the core of an MVU reducer. Prefer `reduce` instead when the source is finite and you only care about the **single final result**.\n\n---"
 	},
 	"sequenceEqual": {
-		"code": "import { from, fromEvent, map, bufferCount, mergeMap, sequenceEqual, Observable } from 'rxjs'\n\n// Scenario: cheat-code detection — Konami code on keyup\nconst konami: string[] = [\n\t'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',\n\t'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',\n\t'KeyB', 'KeyA', 'Enter'\n]\n\nconst keyCodes$: Observable<string> = fromEvent<KeyboardEvent>(document, 'keyup').pipe(\n\tmap((e: KeyboardEvent): string => e.code)\n)\n\nconst konamiMatch$: Observable<boolean> = keyCodes$.pipe(\n\tbufferCount(konami.length, 1),\n\tmergeMap((last11: string[]): Observable<boolean> => from(last11).pipe(sequenceEqual(from(konami))))\n)\n\nkonamiMatch$.subscribe((matched: boolean): void => {\n\tif (matched) unlockEasterEgg()\n})\n\nfunction unlockEasterEgg(): void { /* ... */ }",
+		"code": "",
 		"gotchas": [
 			"**Requires both streams to complete for `true`** — if the source is infinite, `sequenceEqual` will emit `false` on mismatch or stall forever on a prefix match. Always constrain with `take(n)` or use finite sources.",
 			"**Equality comparator matters** — default `===` is fine for primitives, wrong for objects. Provide a custom comparator for structural equality (`(a, b) => a.id === b.id`).",
@@ -1100,7 +1100,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `sequenceEqual` when you want a **boolean \"are these two finite streams equal as sequences?\"**. Prefer `zip` if you want the pairs downstream, or `combineLatest` if you only care about the latest values."
 	},
 	"share": {
-		"code": "",
+		"code": "import { fromEvent, share, map, filter } from 'rxjs'\n\n// Shared mouse-move stream — one event listener, many consumers\nconst mousemove$ = fromEvent<MouseEvent>(document, 'mousemove').pipe(\n\tshare()\n)\n\n// Consumer A: track X coordinate\nconst x$ = mousemove$.pipe(\n\tmap((e: MouseEvent): number => e.clientX)\n)\n\n// Consumer B: detect when cursor enters the left half\nconst inLeftHalf$ = mousemove$.pipe(\n\tmap((e: MouseEvent): boolean => e.clientX < window.innerWidth / 2),\n\tfilter((inLeft: boolean) => inLeft)\n)\n\n// Both consumers share the same underlying event listener\nx$.subscribe((x: number) => console.log('x:', x))\ninLeftHalf$.subscribe(() => console.log('entered left half'))",
 		"gotchas": [
 			"**Refcount reset restarts the source** — when the last subscriber unsubscribes, the source subscription is torn down. If a new subscriber arrives afterward, `share()` re-subscribes to the source from the beginning. For HTTP observables this means a new network request fires. Use `shareReplay(1)` if you need the last value replayed to late subscribers and do not want re-subscription.",
 			"**Late subscribers miss past values** — unlike `shareReplay`, `share()` has no buffer. A subscriber that arrives after values have been emitted gets nothing from the past. This is the most common source of \"where did my value go?\" bugs.",
@@ -1112,7 +1112,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `share()` when you have a cold Observable that multiple consumers subscribe to independently and you want a single shared execution with no value replay. Prefer `shareReplay(1)` instead when late subscribers must receive the most recent value (e.g. current state, cached response)."
 	},
 	"shareReplay": {
-		"code": "",
+		"code": "import { HttpClient } from '@angular/common/http'\nimport { shareReplay, map } from 'rxjs'\nimport type { Observable } from 'rxjs'\n\ninterface User {\n\tid: number\n\tname: string\n}\n\n// Service layer — one HTTP call shared across all consumers\nclass UserService {\n\tprivate readonly currentUser$: Observable<User>\n\n\tconstructor(private http: HttpClient) {\n\t\tthis.currentUser$ = this.http.get<User>('/api/me').pipe(\n\t\t\tshareReplay(1)\n\t\t)\n\t}\n\n\tgetUser(): Observable<User> {\n\t\treturn this.currentUser$\n\t}\n\n\tgetDisplayName(): Observable<string> {\n\t\treturn this.currentUser$.pipe(\n\t\t\tmap((user: User): string => user.name)\n\t\t)\n\t}\n}",
 		"gotchas": [
 			"**`refCount: false` (RxJS 7 default) keeps the source alive forever** — in RxJS 7, `shareReplay(1)` uses `refCount: false` by default, meaning the source subscription is never torn down even when all subscribers unsubscribe. This is intentional for caching but causes memory/connection leaks for infinite sources like WebSockets. Use `shareReplay({ bufferSize: 1, refCount: true })` if you want automatic teardown when no subscribers remain.",
 			"**RxJS 6 vs RxJS 7 `refCount` default flipped** — RxJS 6 `shareReplay(1)` implicitly used `refCount: true` (source subscription torn down on zero subscribers). RxJS 7 flipped this to `refCount: false`. Upgrading without checking this is a common source of resource leaks or unexpected re-subscriptions. Always be explicit: pass the config object rather than the shorthand.",
@@ -1124,7 +1124,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `shareReplay(1)` when you have a cold Observable (HTTP request, expensive derivation) that multiple consumers must share, and late subscribers must receive the most recent value immediately. Use `share()` instead when there is no need to replay past values and you want refcounting to tear down the source automatically."
 	},
 	"single": {
-		"code": "import { from, single, catchError, EMPTY, Observable } from 'rxjs'\n\n// Scenario: uniqueness assertion — find the single active session for a user\ninterface Session {\n\tid: string\n\tuserId: string\n\tactive: boolean\n}\n\ndeclare const sessions$: Observable<Session>\nconst userId = 'u-42'\n\nconst activeSession$: Observable<Session> = sessions$.pipe(\n\tsingle((s: Session): boolean => s.userId === userId && s.active),\n\tcatchError((err: unknown): Observable<never> => {\n\t\tconsole.error('Session invariant violated:', err)\n\t\treturn EMPTY\n\t})\n)",
+		"code": "",
 		"gotchas": [
 			"**Three different error types, all different meanings** — `EmptyError` (source emitted nothing), `NotFoundError` (values existed, none matched), `SequenceError` (more than one matched). Branch on type if you want specific handling.",
 			"**Waits for completion before emitting the happy-path value** — even after the single match, `single` does not emit until source completion, because a second match could still arrive. On infinite sources this means it never emits on success.",
@@ -1136,7 +1136,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `single` when **\"exactly one match\" is a hard invariant** and a violation should error. Prefer `first` for \"give me the first\", `last` for \"give me the final\", or `filter + toArray` when multiple matches are normal."
 	},
 	"skip": {
-		"code": "",
+		"code": "import { BehaviorSubject } from 'rxjs'\nimport { skip } from 'rxjs/operators'\n\ninterface AppState {\n\tcount: number\n}\n\nconst state$ = new BehaviorSubject<AppState>({ count: 0 })\n\n// BehaviorSubject replays the current value on subscription — skip it\n// to only react to future state changes, not the initial value\nconst changes$ = state$.pipe(skip(1))\n\nchanges$.subscribe((state: AppState) => {\n\tconsole.log('State changed:', state)\n})\n\nstate$.next({ count: 1 })  // logged\nstate$.next({ count: 2 })  // logged\n// Initial { count: 0 } was skipped",
 		"gotchas": [
 			"**`skip(1)` on a `BehaviorSubject`** — the most common use case: `BehaviorSubject` always replays its current value on subscription. `skip(1)` discards that initial replay and only reacts to subsequent `.next()` calls. This is a well-established pattern but easy to forget.",
 			"**`skip` vs `skipWhile`** — `skip(n)` is count-based and unconditional; `skipWhile(predicate)` is condition-based and stops skipping as soon as the predicate returns false. Use `skip` when the number to skip is known up front.",
@@ -1146,7 +1146,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `skip(n)` when you need to **discard a fixed number of leading values** by position. Prefer `skipWhile` when the skip condition depends on value content, and `skipUntil` when an external signal controls when to start emitting."
 	},
 	"skipLast": {
-		"code": "",
+		"code": "import { of } from 'rxjs'\nimport { skipLast } from 'rxjs/operators'\n\n// Stream of CSV rows where the last row is a summary — discard it\nconst rows$ = of(\n\t'Alice,100',\n\t'Bob,200',\n\t'Charlie,150',\n\t'TOTAL,450'   // trailing summary — should be skipped\n)\n\nconst dataRows$ = rows$.pipe(skipLast(1))\n\ndataRows$.subscribe((row: string) => processRow(row))\n// 'Alice,100'\n// 'Bob,200'\n// 'Charlie,150'\n// 'TOTAL,450' is discarded",
 		"gotchas": [
 			"**Emits with a lag even on infinite streams** — `skipLast(n)` introduces a buffer of depth `n`. On an infinite stream that never completes, it behaves like a delay of `n` positions: value `k` is emitted when value `k+n` arrives. The buffer never flushes the tail values, but the rest of the stream still flows through.",
 			"**`skipLast(n)` where n ≥ stream length emits nothing** — if the source emits fewer or equal values than `skipCount`, the entire output is empty (all values end up as the \"last n\").",
@@ -1157,7 +1157,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `skipLast(n)` when you need to **discard the trailing N values** of a stream. Prefer `skip(n)` to discard leading values, and `takeLast(n)` when you want only the tail."
 	},
 	"skipUntil": {
-		"code": "",
+		"code": "import { interval, fromEvent } from 'rxjs'\nimport { skipUntil, take } from 'rxjs/operators'\n\n// A continuously ticking timer — don't start processing until user clicks Start\nconst ticker$ = interval(500)\n\nconst startBtn = document.getElementById('start')!\nconst start$ = fromEvent(startBtn, 'click')\n\nconst activeTicker$ = ticker$.pipe(\n\tskipUntil(start$),\n\ttake(10)  // process 10 ticks after start\n)\n\nactiveTicker$.subscribe((tick: number) => {\n\tconsole.log('Tick:', tick)\n})",
 		"gotchas": [
 			"**The gate opens permanently on the notifier's first emission** — like `skipWhile`, once `skipUntil` stops skipping it never re-evaluates. Subsequent notifier emissions are ignored. If you need repeating gates, compose `skipUntil` with `takeUntil` in repeated subscriptions.",
 			"**Notifier completing without emitting keeps the gate closed** — if the notifier completes via `EMPTY` or a completing Observable that never emits, the gate never opens and the output stream will complete empty when the source completes.",
@@ -1168,7 +1168,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `skipUntil` when you need an **externally triggered one-way gate** — discard all source values until a separate event fires, then let everything through. Pair with `takeUntil` to define both the start and end of a processing window."
 	},
 	"skipWhile": {
-		"code": "",
+		"code": "import { BehaviorSubject } from 'rxjs'\nimport { skipWhile, distinctUntilChanged } from 'rxjs/operators'\n\ntype AppStatus = 'initialising' | 'loading' | 'ready' | 'error'\n\ninterface AppState {\n\tstatus: AppStatus\n\tdata: string[]\n}\n\nconst state$ = new BehaviorSubject<AppState>({ status: 'initialising', data: [] })\n\n// Only start reacting to state once the app has finished initialising\nconst ready$ = state$.pipe(\n\tskipWhile((s: AppState) => s.status === 'initialising' || s.status === 'loading'),\n\tdistinctUntilChanged()\n)\n\nready$.subscribe((state: AppState) => renderApp(state))\n\nstate$.next({ status: 'loading', data: [] })        // skipped\nstate$.next({ status: 'ready', data: ['item1'] })   // forwarded — gate opens\nstate$.next({ status: 'ready', data: ['item2'] })   // forwarded (gate stays open)",
 		"gotchas": [
 			"**The gate opens permanently on the first failure** — once `skipWhile` stops skipping, it never re-evaluates the predicate. Even if later values would have matched the original skip condition, they pass through. If you need repeated conditional filtering, use `filter` instead.",
 			"**`skipWhile` vs `filter`** — `skipWhile` is a one-way gate (skip until condition fails, then let everything through). `filter` re-evaluates the predicate on every value throughout the stream's lifetime. Use `filter` when the condition must be checked continuously.",
@@ -1179,7 +1179,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `skipWhile` when you need a **one-way gate that discards leading values until a condition is first met**, then lets everything through unconditionally. Use `filter` when the condition must be re-evaluated on every emission throughout the stream."
 	},
 	"startWith": {
-		"code": "import { fromEvent, map, scan, startWith, Observable } from 'rxjs'\n\n// Scenario: reducer initial value — MVU state stream with a guaranteed initial render\ninterface State { count: number }\ntype Action = { type: 'inc' } | { type: 'dec' }\n\nconst initialState: State = { count: 0 }\n\nconst action$: Observable<Action> = fromEvent<MouseEvent>(document, 'click').pipe(\n\tmap((e: MouseEvent): Action => e.shiftKey ? { type: 'dec' } : { type: 'inc' })\n)\n\nconst state$: Observable<State> = action$.pipe(\n\tscan((state: State, action: Action): State => {\n\t\tswitch (action.type) {\n\t\t\tcase 'inc': return { count: state.count + 1 }\n\t\t\tcase 'dec': return { count: state.count - 1 }\n\t\t}\n\t}, initialState),\n\tstartWith(initialState)\n)",
+		"code": "",
 		"gotchas": [
 			"**Prefix emits on every subscription** — because `startWith` is unicast, a second subscriber gets the prefix again. If you want a shared prefix (emitted once across subscribers), place `startWith` upstream of `shareReplay(1)` or `share()`.",
 			"**Not the same as `defaultIfEmpty`** — `startWith` always prepends, regardless of whether the source emits. `defaultIfEmpty` only emits if the source was empty.",
@@ -1191,7 +1191,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `startWith(...values)` when you need a **guaranteed initial value (or values) at subscription time** before the source is sampled. Prefer `defaultIfEmpty` for empty-only fallbacks, or a `BehaviorSubject` for stateful always-available values."
 	},
 	"Subject": {
-		"code": "",
+		"code": "import { Subject } from 'rxjs'\nimport { scan, startWith, shareReplay } from 'rxjs/operators'\n\ntype Action =\n\t| { type: 'INCREMENT' }\n\t| { type: 'DECREMENT' }\n\t| { type: 'RESET' }\n\ninterface State {\n\tcount: number\n}\n\nfunction reducer(state: State, action: Action): State {\n\tswitch (action.type) {\n\t\tcase 'INCREMENT': return { count: state.count + 1 }\n\t\tcase 'DECREMENT': return { count: state.count - 1 }\n\t\tcase 'RESET':     return { count: 0 }\n\t}\n}\n\n// Subject as the action dispatcher\nconst action$ = new Subject<Action>()\n\nconst state$ = action$.pipe(\n\tscan(reducer, { count: 0 }),\n\tstartWith({ count: 0 }),\n\tshareReplay(1)\n)\n\nstate$.subscribe((s: State) => renderCount(s.count))\n\n// Dispatch actions imperatively\naction$.next({ type: 'INCREMENT' })\naction$.next({ type: 'INCREMENT' })\naction$.next({ type: 'DECREMENT' })",
 		"gotchas": [
 			"**Late subscribers miss all past values** — Subject has no memory. If you need new subscribers to receive the current value, use `BehaviorSubject`. If they need N past values, use `ReplaySubject`.",
 			"**Avoid exposing Subject publicly** — return `subject.asObservable()` from services/stores so consumers cannot call `.next()` on it from the outside. This enforces unidirectional data flow.",
@@ -1203,7 +1203,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `Subject` when you need a **manual push interface with no replay** — action dispatchers, event buses, and cleanup signals. Use `BehaviorSubject` when current-value semantics are needed, and `ReplaySubject` when history replay is required."
 	},
 	"subscribeOn": {
-		"code": "import { merge, of, subscribeOn, asyncScheduler, Observable } from 'rxjs'\n\n// Scenario: break synchronous merge order — let b$ run first, then a$\nconst a$: Observable<string> = of('a1', 'a2', 'a3').pipe(subscribeOn(asyncScheduler))\nconst b$: Observable<string> = of('b1', 'b2', 'b3')\n\nconst merged$: Observable<string> = merge(a$, b$)\nmerged$.subscribe((val: string): void => console.log(val))\n\n// Logs: b1, b2, b3, a1, a2, a3\n// (b$ is subscribed synchronously; a$ is deferred to the next tick)",
+		"code": "",
 		"gotchas": [
 			"**Not the same as `observeOn`** — `subscribeOn` schedules the *start* of the source's work; `observeOn` schedules the arrival of its emissions at downstream. They solve different problems and often compose.",
 			"**Only the first `subscribeOn` in the chain matters** — because `subscribeOn` wraps the source in a scheduled subscription, chaining multiple `subscribeOn` calls is redundant. The innermost one wins.",
@@ -1215,7 +1215,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `subscribeOn` when you specifically need to **control when the source is subscribed** on a scheduler. In most cases, prefer `observeOn` for emission scheduling or `defer` for lazy source creation."
 	},
 	"switchAll": {
-		"code": "",
+		"code": "import { Subject } from 'rxjs'\nimport { switchAll, map } from 'rxjs/operators'\nimport { webSocket } from 'rxjs/webSocket'\n\ninterface Message {\n\troomId: string\n\ttext: string\n}\n\n// Switch to a new WebSocket stream each time the active room changes\nconst activeRoom$ = new Subject<string>()\n\nconst messages$ = activeRoom$.pipe(\n\tmap((roomId: string) =>\n\t\twebSocket<Message>(`wss://chat.example.com/room/${roomId}`)\n\t),\n\tswitchAll()  // unsubscribes from previous room's WebSocket when room changes\n)\n\nmessages$.subscribe((msg: Message) => displayMessage(msg))\n\n// Trigger room switch\nactiveRoom$.next('general')\nactiveRoom$.next('engineering')  // disconnects from 'general', connects to 'engineering'",
 		"gotchas": [
 			"**`switchAll` = `switchMap(x => x)`** — `switchMap` is the idiomatic shorthand. Use `switchAll` only when you already have a higher-order Observable and the projection is done upstream.",
 			"**Outer must emit Observables** — if the outer source emits plain values, `switchAll` will throw. Use `switchMap` with a projection instead.",
@@ -1225,7 +1225,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `switchAll` when you already hold a higher-order Observable and **only the most recently emitted inner should be active**. Prefer `switchMap` when you can project and flatten in one step."
 	},
 	"switchMap": {
-		"code": "",
+		"code": "import { fromEvent } from 'rxjs'\nimport { switchMap, map, debounceTime, distinctUntilChanged } from 'rxjs/operators'\nimport { ajax } from 'rxjs/ajax'\n\ninterface SearchResult {\n\tid: number\n\ttitle: string\n}\n\nconst input = document.getElementById('search') as HTMLInputElement\n\n// Classic search typeahead — each new term cancels the previous request\nconst results$ = fromEvent<Event>(input, 'input').pipe(\n\tmap((e: Event) => (e.target as HTMLInputElement).value.trim()),\n\tdebounceTime(300),\n\tdistinctUntilChanged(),\n\tswitchMap((term: string) =>\n\t\tajax.getJSON<SearchResult[]>(`/api/search?q=${encodeURIComponent(term)}`)\n\t)\n)\n\nresults$.subscribe((results: SearchResult[]) => renderResults(results))",
 		"gotchas": [
 			"**Cancelled inner errors are also swallowed** — if the cancelled inner Observable was about to error, that error is silently discarded along with its emissions. Only errors from the *currently active* inner propagate to the output.",
 			"**Not safe for operations that must not be interrupted** — do not use `switchMap` for form submissions, payments, or any write operation where partial execution is dangerous. Use `exhaustMap` (ignore new while busy) or `concatMap` (queue and execute all) instead.",
@@ -1237,7 +1237,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `switchMap` when **only the result of the most recent source value matters** and stale in-flight work should be cancelled. Prefer `concatMap` when every result is needed in order, `mergeMap` when all results are needed concurrently, and `exhaustMap` when new triggers must be blocked while busy."
 	},
 	"switchMapTo": {
-		"code": "",
+		"code": "// Deprecated — do not use in new code\nimport { fromEvent } from 'rxjs'\nimport { switchMapTo } from 'rxjs/operators'\n\nconst result$ = fromEvent(document.getElementById('refresh')!, 'click').pipe(\n\tswitchMapTo(fetchData$())\n)\n\n// Preferred replacement\nimport { fromEvent } from 'rxjs'\nimport { switchMap } from 'rxjs/operators'\n\nconst result$ = fromEvent(document.getElementById('refresh')!, 'click').pipe(\n\tswitchMap(() => fetchData$())\n)",
 		"gotchas": [
 			"**Deprecated in RxJS 7, removed in RxJS 8** — do not use in new code. Migrate all existing uses to `switchMap(() => inner$)`.",
 			"**Cold inner creates a fresh execution per switch** — if `innerObservable` is cold (e.g. an HTTP request), each source emission cancels the previous execution and starts a new one. If it is hot (e.g. a shared `Subject`), all switches connect to the same stream — the cancellation only stops delivery to this pipeline, not the upstream source."
@@ -1246,7 +1246,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Do **not** use `switchMapTo` in new code. Replace all occurrences with `switchMap(() => innerObservable)`."
 	},
 	"switchScan": {
-		"code": "",
+		"code": "import { fromEvent } from 'rxjs'\nimport { switchScan, map, debounceTime, distinctUntilChanged } from 'rxjs/operators'\nimport { ajax } from 'rxjs/ajax'\n\ninterface SearchState {\n\tterm: string\n\tresults: string[]\n\tpreviousResults: string[]\n}\n\nconst input = document.getElementById('search') as HTMLInputElement\n\n// Search typeahead that carries the previous results as context while loading new ones\nconst search$ = fromEvent<Event>(input, 'input').pipe(\n\tmap((e: Event) => (e.target as HTMLInputElement).value.trim()),\n\tdebounceTime(300),\n\tdistinctUntilChanged(),\n\tswitchScan(\n\t\t(acc: SearchState, term: string) =>\n\t\t\tajax.getJSON<string[]>(`/api/search?q=${encodeURIComponent(term)}`).pipe(\n\t\t\t\tmap((results: string[]): SearchState => ({\n\t\t\t\t\tterm,\n\t\t\t\t\tresults,\n\t\t\t\t\tpreviousResults: acc.results\n\t\t\t\t}))\n\t\t\t),\n\t\t{ term: '', results: [], previousResults: [] }\n\t)\n)\n\nsearch$.subscribe((state: SearchState) => renderSearch(state))",
 		"gotchas": [
 			"**The `acc` on cancellation is the last *emitted* value, not the last potential value** — if the cancelled inner emitted `r1` then `r2` before being cancelled, `acc` for the next call is `r2`. If the inner was cancelled before emitting anything, `acc` remains unchanged from the previous call.",
 			"**Added in RxJS 7** — `switchScan` does not exist in RxJS 6. In RxJS 6, the equivalent pattern is `switchMap` combined with an external `BehaviorSubject` or `scan` feeding state into the projection.",
@@ -1257,7 +1257,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `switchScan` when you need **`scan`-like accumulated state** where each async transition **cancels the previous** when a new source value arrives. Use `mergeScan` when all transitions must complete, and plain `scan` when transitions are synchronous."
 	},
 	"take": {
-		"code": "",
+		"code": "import { fromEvent, interval } from 'rxjs'\nimport { take, map, switchMap } from 'rxjs/operators'\n\n// Scenario: one-shot button click — process only the first click,\n// ignore all subsequent ones\n\nconst btn = document.querySelector('#submit') as HTMLButtonElement\n\nconst firstClick$ = fromEvent(btn, 'click').pipe(\n\ttake(1),\n)\n\nfirstClick$.subscribe(() => submitForm())\n\n// ---\n\n// Scenario: MVU — initialise state from an API on first load only\n\nconst init$ = loadConfig().pipe(\n\ttake(1),   // defensive: loadConfig should complete, but take(1) guarantees it\n)\n\nconst state$ = action$.pipe(\n\tscan(reducer, initialState),\n\tstartWith(initialState),\n\tshareReplay(1),\n)\n\ninit$.pipe(\n\tswitchMap(config => state$),\n).subscribe(renderApp)",
 		"gotchas": [
 			"**`take(1)` vs `first()` on empty streams** — `take(1)` completes silently if the source emits nothing; `first()` throws `EmptyError`. Use `take(1)` when an empty stream is acceptable, `first()` when it signals a bug.",
 			"**`take(0)` completes immediately** — No values are emitted and the source is never subscribed. This is occasionally useful as a no-op but is usually a logic error.",
@@ -1268,7 +1268,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `take(n)` when you want the **first n values by position** with no content inspection. Prefer `takeWhile` when the stopping condition depends on value content, or `takeUntil` when it depends on an external event."
 	},
 	"takeLast": {
-		"code": "",
+		"code": "import { of, from } from 'rxjs'\nimport { takeLast, map, toArray } from 'rxjs/operators'\n\n// Scenario: paginated API — fetch all pages, keep only the last 3 results\n\nconst pages$ = fetchAllPages()   // finite stream of Page objects\n\nconst lastThreePages$ = pages$.pipe(\n\ttakeLast(3),\n)\n\nlastThreePages$.subscribe(page => renderPage(page))\n\n// ---\n\n// Scenario: get only the final accumulated state after a\n// finite batch of actions replays through the reducer\n\nconst replayedActions$ = from(storedActions)   // finite array → Observable\n\nconst finalState$ = replayedActions$.pipe(\n\tscan(reducer, initialState),\n\ttakeLast(1),   // emit only the final reduced state\n)\n\nfinalState$.subscribe(state => hydratStore(state))",
 		"gotchas": [
 			"**Stalls forever on infinite sources** — This is the most dangerous gotcha. `interval()`, `fromEvent()`, `Subject` without explicit completion — any of these paired with `takeLast` will never emit and will leak memory as the buffer continues to receive values. Always ensure the source is finite or add a `take(n)` / `takeUntil` upstream.",
 			"**All buffered values emit synchronously on completion** — `takeLast(n)` does not spread the final emissions over time; they all fire in the same microtask. Downstream operators will process them synchronously one after another.",
@@ -1279,7 +1279,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `takeLast(n)` when you need the **last n values of a finite stream** emitted together on completion. Never use it on infinite streams — add `take(n)` or `takeUntil` first to guarantee completion."
 	},
 	"takeUntil": {
-		"code": "",
+		"code": "import { Subject, fromEvent, interval } from 'rxjs'\nimport { takeUntil, switchMap, map, tap } from 'rxjs/operators'\n\n// Scenario: component lifecycle teardown — canonical RxJS pattern\n\nclass MusicianListComponent {\n\tprivate readonly destroy$ = new Subject<void>()\n\n\tinit(): void {\n\t\t// All subscriptions use takeUntil(this.destroy$)\n\t\tfromEvent(window, 'resize').pipe(\n\t\t\ttakeUntil(this.destroy$),\n\t\t\tmap(() => window.innerWidth),\n\t\t).subscribe(width => this.updateLayout(width))\n\n\t\tinterval(30_000).pipe(\n\t\t\ttakeUntil(this.destroy$),\n\t\t\tswitchMap(() => this.musicianService.loadAll()),\n\t\t).subscribe(musicians => this.updateState(musicians))\n\t}\n\n\tdestroy(): void {\n\t\tthis.destroy$.next()    // triggers all takeUntil completions\n\t\tthis.destroy$.complete()\n\t}\n\n\tprivate updateLayout(width: number): void { /* ... */ }\n\tprivate updateState(musicians: Musician[]): void { /* ... */ }\n}\n\n// ---\n\n// Scenario: cancel an in-flight search when the user clears the input\n\nconst cancel$ = fromEvent(clearBtn, 'click')\n\nfromEvent<InputEvent>(searchInput, 'input').pipe(\n\tmap(e => (e.target as HTMLInputElement).value),\n\tswitchMap(query =>\n\t\tfetchResults(query).pipe(\n\t\t\ttakeUntil(cancel$),   // cancel mid-flight if clear is clicked\n\t\t)\n\t),\n).subscribe(results => renderResults(results))",
 		"gotchas": [
 			"**`destroy$` must be a `Subject`, not a plain Observable** — The notifier needs to be something you can imperatively trigger (`destroy$.next()`). A cold Observable won't fire unless subscribed, and a `BehaviorSubject` will fire immediately (completing the stream before it starts). Use a plain `Subject<void>`.",
 			"**Always call `destroy$.complete()` after `destroy$.next()`** — If you only call `next()`, the Subject itself stays open and may hold references. Calling `complete()` closes it cleanly.",
@@ -1291,7 +1291,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `takeUntil(notifier$)` when the **stop signal is an external event** — especially for component lifecycle teardown. It is the standard subscription cleanup pattern in reactive architectures. Prefer `takeWhile` when the stop condition lives in the source values themselves.\n\n---"
 	},
 	"takeWhile": {
-		"code": "",
+		"code": "import { interval, fromEvent } from 'rxjs'\nimport { takeWhile, map, switchMap, tap } from 'rxjs/operators'\n\n// Scenario: poll a job status API until the job finishes\n\ninterface JobStatus {\n\tid: string\n\tstatus: 'pending' | 'running' | 'complete' | 'error'\n\tprogress: number\n}\n\nconst pollJobStatus$ = (jobId: string) =>\n\tinterval(2000).pipe(\n\t\tswitchMap(() => fetchJobStatus(jobId)),\n\t\ttakeWhile(\n\t\t\t(job: JobStatus) => job.status === 'pending' || job.status === 'running',\n\t\t\ttrue   // inclusive: emit the terminal status before completing\n\t\t),\n\t\ttap((job: JobStatus) => updateProgressBar(job.progress)),\n\t)\n\npollJobStatus$('job-123').subscribe({\n\tnext: (job: JobStatus) => {\n\t\tif (job.status === 'complete') showSuccess()\n\t\tif (job.status === 'error') showError()\n\t},\n\tcomplete: () => hideSpinner(),\n})\n\n// ---\n\n// Scenario: MVU — replay stored actions until a reset action is encountered\n\nconst replayUntilReset$ = from(storedActions).pipe(\n\ttakeWhile((action: Action) => action.type !== 'RESET', true),\n\tscan(reducer, initialState),\n)",
 		"gotchas": [
 			"**Default drops the boundary value — use `inclusive: true` when you need it** — The most common mistake with `takeWhile`. If you poll until `status === 'complete'` and need to process that final status, use `inclusive: true` or you will never see the terminal value.",
 			"**Predicate is called for every value — keep it pure and cheap** — The predicate runs synchronously on every emission. Side effects in the predicate (logging, mutation) will fire multiple times with `retry` or `repeat`. Use `tap` for side effects instead.",
@@ -1302,7 +1302,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `takeWhile(pred)` when the **stop condition is encoded in the values themselves**. Use `inclusive: true` whenever you need to process the boundary value. Prefer `takeUntil` when the stop signal comes from an external Observable rather than the stream's own values."
 	},
 	"tap": {
-		"code": "import { fromEvent, map, tap, switchMap, Observable } from 'rxjs'\n\n// Scenario: debug + metrics in an MVU effect pipeline\ninterface Action { type: string }\n\ndeclare function logEvent(name: string, payload: unknown): void\ndeclare function handleAction(a: Action): Observable<Action>\n\nconst actions$: Observable<Action> = fromEvent<MouseEvent>(document, 'click').pipe(\n\tmap((e: MouseEvent): Action => ({ type: 'CLICK' })),\n\ttap((a: Action): void => logEvent('action-dispatched', a)),   // side-effect only\n\tswitchMap((a: Action): Observable<Action> => handleAction(a))\n)",
+		"code": "",
 		"gotchas": [
 			"**Synchronous errors in the callback terminate the stream** — throwing inside `tap(v => ...)` emits an `error`. If the callback could throw, wrap with try/catch or accept that the stream errors.",
 			"**Don't mutate values in `tap`** — technically possible, officially discouraged. The comment in the source says \"You can mutate objects as they pass through\" but mutation breaks downstream purity guarantees. Clone-and-mutate in `map` instead.",
@@ -1314,7 +1314,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `tap` for **any side effect** (logging, metrics, dispatch) that must not alter the stream. Keep `map` and other transformation operators pure; side effects go here. For termination-only cleanup, prefer `finalize`."
 	},
 	"throttle": {
-		"code": "",
+		"code": "import { fromEvent } from 'rxjs'\nimport { throttle, map } from 'rxjs/operators'\nimport { timer } from 'rxjs'\n\ninterface ResizeEvent {\n\twidth: number\n\theight: number\n}\n\n// Throttle resize events — larger resize changes get a longer cooldown\nconst resize$ = fromEvent<UIEvent>(window, 'resize').pipe(\n\tmap((): ResizeEvent => ({\n\t\twidth: window.innerWidth,\n\t\theight: window.innerHeight\n\t})),\n\tthrottle((e: ResizeEvent) => {\n\t\t// Bigger dimension changes need longer cooldown\n\t\tconst area = e.width * e.height\n\t\tconst cooldown = area > 1_000_000 ? 500 : 200\n\t\treturn timer(cooldown)\n\t})\n)\n\nresize$.subscribe((e: ResizeEvent) => relayout(e))",
 		"gotchas": [
 			"**`throttle` vs `throttleTime`** — `throttleTime(ms)` is a fixed-duration shorthand; `throttle(fn)` allows the duration to vary per value. Use `throttleTime` when the window is constant; use `throttle` when it must adapt to the value.",
 			"**`throttle` vs `debounce`** — `throttle` emits the *first* value in a burst and discards the rest until the window closes. `debounce` suppresses *all* values and only emits after a silence period. Use `throttle` for guaranteed responsiveness (always reacts within the window); use `debounce` when you only care about the final settled value.",
@@ -1326,7 +1326,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `throttle` when the **silence window duration varies per value** or when you need `leading`/`trailing` control. Use `throttleTime` for a fixed-duration window with the same semantics."
 	},
 	"throttleTime": {
-		"code": "",
+		"code": "import { fromEvent, animationFrameScheduler } from 'rxjs';\nimport { throttleTime, map, distinctUntilChanged } from 'rxjs/operators';\n\ninterface ScrollPosition {\n\tx: number;\n\ty: number;\n}\n\n// Throttle scroll events to fire at most once per 100ms,\n// then derive a scroll position for the rest of the pipeline.\nconst scrollPosition$ = fromEvent<Event>(window, 'scroll').pipe(\n\tthrottleTime(100),\n\tmap((): ScrollPosition => ({\n\t\tx: window.scrollX,\n\t\ty: window.scrollY,\n\t})),\n\tdistinctUntilChanged((a, b) => a.y === b.y),\n);\n\nscrollPosition$.subscribe(({ y }) => {\n\tconsole.log('Scroll Y:', y);\n});",
 		"gotchas": [
 			"**Leading vs trailing confusion** — The default is `leading: true, trailing: false`, meaning the *first* value in the burst passes through and the rest are dropped. If you want the *last* value (e.g. the final position after a burst of moves), you need `{ leading: false, trailing: true }`. Many developers expect `throttleTime` to behave like `debounceTime` and are surprised when intermediate values are lost with no trailing emit.",
 			"**`throttleTime` vs `debounceTime` — they solve different problems** — `throttleTime` guarantees at least one emission every N ms during a sustained stream; `debounceTime` waits for silence before emitting. For a scroll handler where you want regular UI updates *while* scrolling is happening, use `throttleTime`. For a search input where you want to wait until the user *stops* typing, use `debounceTime`.",
@@ -1338,7 +1338,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `throttleTime` when you need **at least one emission per burst** with a guaranteed minimum gap between outputs — especially for high-frequency UI events like scroll, resize, or mousemove. Prefer `debounceTime` instead when **you only care about the final settled value** and can afford to wait for silence."
 	},
 	"throwError": {
-		"code": "import { throwError, Observable, of, switchMap } from 'rxjs'\n\n// Scenario: conditional-fail branch — validate input before downstream processing\ninterface Input {\n\temail: string\n}\n\ndeclare const input$: Observable<Input>\ndeclare function send(i: Input): Observable<void>\n\nconst sent$: Observable<void> = input$.pipe(\n\tswitchMap((i: Input): Observable<void> => {\n\t\tif (!i.email.includes('@')) {\n\t\t\treturn throwError((): Error => new Error(`Invalid email: ${i.email}`))\n\t\t}\n\t\treturn send(i)\n\t})\n)",
+		"code": "",
 		"gotchas": [
 			"**Must pass a factory function, not the error directly** — `throwError(new Error('x'))` is deprecated (and removed in v8). Always use `throwError(() => new Error('x'))` so the error is constructed at subscribe time.",
 			"**Each subscriber gets a fresh error** — because the factory runs per subscribe, each subscriber sees its own error object with its own stack trace. Stack traces captured at subscribe time, not at `throwError()` call time.",
@@ -1350,7 +1350,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `throwError(() => err)` when you need an **Observable that errors immediately on subscribe** — conditional branches, test fixtures, retry-budget exhaustion. Inside operator callbacks, prefer `throw` directly; `throwError` is for when an Observable return is required."
 	},
 	"throwIfEmpty": {
-		"code": "import { fromEvent, takeUntil, timer, throwIfEmpty, catchError, EMPTY, Observable } from 'rxjs'\n\n// Scenario: guarded timeout — require at least one click in 3 seconds\nconst firstClickOrError$: Observable<MouseEvent> = fromEvent<MouseEvent>(document, 'click').pipe(\n\ttakeUntil(timer(3000)),\n\tthrowIfEmpty((): Error => new Error('No click within 3 seconds')),\n\tcatchError((err: Error): Observable<never> => {\n\t\tconsole.warn('Timeout:', err.message)\n\t\treturn EMPTY\n\t})\n)\n\nfirstClickOrError$.subscribe((e: MouseEvent): void => console.log('clicked', e))",
+		"code": "",
 		"gotchas": [
 			"**Stalls on infinite sources with no values** — the error only fires on source completion. If your source never completes, the error never fires. Pair with `takeUntil(timer(...))` to force completion.",
 			"**Factory runs at most once per subscription** — but it's called fresh each time `throwIfEmpty` decides to error. Don't rely on side effects in the factory.",
@@ -1362,7 +1362,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `throwIfEmpty` when you want the source's values if any, but **empty completion should be a domain error**. Prefer `defaultIfEmpty` when empty is acceptable, or `first`/`last` when you also want to select a specific emission."
 	},
 	"timeInterval": {
-		"code": "",
+		"code": "import { fromEvent } from 'rxjs'\nimport { timeInterval, map, filter } from 'rxjs/operators'\nimport { TimeInterval } from 'rxjs'\n\ninterface KeyPress {\n\tkey: string\n}\n\ninterface AnnotatedKeyPress {\n\tkey: string\n\tgapMs: number\n}\n\n// Measure typing speed — time between keystrokes\nconst typing$ = fromEvent<KeyboardEvent>(document, 'keydown').pipe(\n\ttimeInterval(),\n\tmap((ti: TimeInterval<KeyboardEvent>): AnnotatedKeyPress => ({\n\t\tkey: ti.value.key,\n\t\tgapMs: ti.interval\n\t})),\n\tfilter((e: AnnotatedKeyPress) => e.key.length === 1) // printable chars only\n)\n\ntyping$.subscribe((e: AnnotatedKeyPress) =>\n\tconsole.log(`Key \"${e.key}\" typed after ${e.gapMs}ms`)\n)",
 		"gotchas": [
 			"**`interval` is from the previous emission, not from subscription** — except for the first value, where `interval` is the time since subscription. This is by design but can be surprising: the first value's `interval` measures the time to arrival, not an inter-emission gap.",
 			"**`timeInterval` vs `timestamp`** — `timestamp` adds an absolute wall-clock timestamp (`{ value, timestamp: Date.now() }`); `timeInterval` adds a relative elapsed gap. Use `timestamp` for logging/event ordering; use `timeInterval` for gap measurement and performance analysis.",
@@ -1374,7 +1374,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `timeInterval` when you need to **measure elapsed time between consecutive emissions** as part of the reactive stream. Use `timestamp` when you need absolute wall-clock times. Use `timeout` when you need to enforce a timing deadline rather than observe it."
 	},
 	"timeout": {
-		"code": "",
+		"code": "import { ajax } from 'rxjs/ajax'\nimport { timeout, catchError } from 'rxjs/operators'\nimport { of } from 'rxjs'\n\ninterface UserProfile {\n\tid: number\n\tname: string\n}\n\n// Error if the API doesn't respond within 5 seconds\nconst profile$ = ajax.getJSON<UserProfile>('/api/profile').pipe(\n\ttimeout(5000),\n\tcatchError((err: unknown) => {\n\t\tif (err instanceof TimeoutError) {\n\t\t\tconsole.error('Request timed out')\n\t\t\treturn of({ id: 0, name: 'Guest' } as UserProfile)\n\t\t}\n\t\tthrow err\n\t})\n)\n\nprofile$.subscribe((user: UserProfile) => renderProfile(user))",
 		"gotchas": [
 			"**`timeout(n)` checks inter-emission gaps, not total duration** — with `timeout(n)` (number shorthand), the clock resets after every emission. If values arrive steadily, the stream never times out even if it runs for hours. Use `first` to set an absolute deadline for the first emission and `each` for per-emission gaps.",
 			"**`TimeoutError` is a distinct class** — always check `err instanceof TimeoutError` in `catchError` to distinguish timeout errors from other errors. Do not swallow all errors generically.",
@@ -1386,7 +1386,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `timeout` to **enforce a deadline on source emissions**. Use the config object form for fine-grained `first`/`each` deadlines and fallback Observables. Pair with `catchError` or `retry` to recover gracefully."
 	},
 	"timeoutWith": {
-		"code": "",
+		"code": "import { ajax } from 'rxjs/ajax'\nimport { timeoutWith } from 'rxjs/operators'\nimport { of } from 'rxjs'\n\ninterface Config {\n\tapiUrl: string\n}\n\n// RxJS 6 — switch to cached config if API stalls\nconst config$ = ajax.getJSON<Config>('/api/config').pipe(\n\ttimeoutWith(3000, of({ apiUrl: '/default' } as Config))\n)\n\nconfig$.subscribe((cfg: Config) => initApp(cfg))",
 		"gotchas": [
 			"**Deprecated in RxJS 7** — `timeoutWith` is officially deprecated. It still works but will be removed in a future major version. Migrate to `timeout({ with: ... })` to avoid future breaking changes.",
 			"**`timeoutWith` checks inter-emission gaps** — the deadline resets after each emission. Use `timeout({ first: n, each: m })` in RxJS 7 if you need different deadlines for the first emission vs subsequent ones — `timeoutWith` has no equivalent for this.",
@@ -1397,7 +1397,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "**Do not use `timeoutWith` in new code.** Use `timeout({ each: n, with: () => fallback$ })` instead. The only reason to use `timeoutWith` is maintaining an existing RxJS 6 codebase that has not yet been migrated."
 	},
 	"timer": {
-		"code": "",
+		"code": "import { timer } from 'rxjs'\nimport { switchMap, takeUntil } from 'rxjs/operators'\nimport { Subject } from 'rxjs'\nimport { ajax } from 'rxjs/ajax'\n\ninterface StatusResponse {\n\tstatus: 'ok' | 'error'\n\tlatency: number\n}\n\nconst destroy$ = new Subject<void>()\n\n// Poll a health endpoint: first check after 1s, then every 30s\nconst healthCheck$ = timer(1000, 30_000).pipe(\n\tswitchMap(() => ajax.getJSON<StatusResponse>('/api/health')),\n\ttakeUntil(destroy$)\n)\n\nhealthCheck$.subscribe((res: StatusResponse) => {\n\tupdateStatusIndicator(res.status, res.latency)\n})\n\n// On component teardown:\n// destroy$.next(); destroy$.complete()",
 		"gotchas": [
 			"**`timer(0)` emits asynchronously** — despite a delay of zero, `timer(0)` emits on the next microtask/macrotask tick, not synchronously. Use `of(0)` if synchronous emission is required.",
 			"**`timer(n)` vs `interval(n)`** — `interval(n)` emits the first value after `n` ms (no custom initial offset); `timer(dueTime, n)` allows a different initial delay. Use `interval` when the first tick should match the interval; use `timer` when you need an offset or a one-shot delay.",
@@ -1409,7 +1409,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `timer` for a **one-shot delayed emission** (`timer(ms)`) or a **repeating ticker with a custom initial delay** (`timer(delay, interval)`). Use `interval` when the first tick equals the repeat interval."
 	},
 	"timestamp": {
-		"code": "",
+		"code": "import { fromEvent } from 'rxjs'\nimport { timestamp, map } from 'rxjs/operators'\nimport { Timestamp } from 'rxjs'\n\ninterface UserAction {\n\ttype: string\n\tpayload: unknown\n}\n\ninterface TimestampedAction {\n\ttype: string\n\tpayload: unknown\n\treceivedAt: number\n}\n\n// Log user actions with wall-clock timestamps for audit trail\nconst action$ = fromEvent<CustomEvent>(store, 'action').pipe(\n\ttimestamp(),\n\tmap((ts: Timestamp<CustomEvent>): TimestampedAction => ({\n\t\ttype: ts.value.detail.type,\n\t\tpayload: ts.value.detail.payload,\n\t\treceivedAt: ts.timestamp\n\t}))\n)\n\naction$.subscribe((a: TimestampedAction) => auditLog.append(a))",
 		"gotchas": [
 			"**`timestamp` vs `timeInterval`** — `timestamp` adds an absolute `Date.now()` value; `timeInterval` adds the elapsed gap since the previous emission. Use `timestamp` for logging, ordering, and latency; use `timeInterval` for gap measurement and throughput analysis.",
 			"**The wrapped `{ value, timestamp }` shape must be unwrapped downstream** — consumers expecting raw values need a `map(ts => ts.value)` to strip the metadata before receiving it.",
@@ -1421,7 +1421,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `timestamp` when you need to **annotate each emission with its absolute wall-clock time** for logging, ordering, or latency analysis. Use `timeInterval` when relative gaps between emissions matter more than absolute times."
 	},
 	"toArray": {
-		"code": "import { interval, take, toArray, Observable, lastValueFrom } from 'rxjs'\n\n// Scenario: promise interop — await all values from a finite stream\nconst allTicks$: Observable<number[]> = interval(100).pipe(\n\ttake(5),\n\ttoArray()\n)\n\nconst ticks: number[] = await lastValueFrom(allTicks$)\n// ticks === [0, 1, 2, 3, 4]",
+		"code": "",
 		"gotchas": [
 			"**Memory grows unboundedly on infinite sources** — `toArray` holds every value until completion. On an unterminated stream, this is a memory leak. Always pair with `take(n)` / `takeUntil` on potentially-long streams.",
 			"**Emits an empty array on empty source** — `[]`, not an error. This is different from `last` or `first`, which error on empty. Handle the empty-array case downstream if that's meaningful.",
@@ -1433,7 +1433,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `toArray` on a **guaranteed-finite stream** when you need the values as a single array at the end. Pair with `take`/`takeUntil` for any stream that could otherwise be infinite. Prefer `bufferTime`/`bufferCount` for chunked arrays mid-stream."
 	},
 	"using": {
-		"code": "import { using, Observable, fromEvent, Unsubscribable } from 'rxjs'\n\n// Scenario: custom DOM listener with scoped cleanup\ninterface Resource extends Unsubscribable {\n\tel: HTMLElement\n}\n\nconst cardEvents$: Observable<MouseEvent> = using(\n\t(): Resource => {\n\t\tconst el = document.createElement('div')\n\t\tel.className = 'floating-card'\n\t\tdocument.body.appendChild(el)\n\t\treturn {\n\t\t\tel,\n\t\t\tunsubscribe: (): void => el.remove()\n\t\t}\n\t},\n\t(res: Resource | void): Observable<MouseEvent> =>\n\t\tfromEvent<MouseEvent>((res as Resource).el, 'click')\n)",
+		"code": "",
 		"gotchas": [
 			"**Both factories run on every subscribe** — not shared across subscriptions. Wrap in `shareReplay` if sharing is needed.",
 			"**Resource disposal is automatic on any termination** — including `error` and explicit unsubscribe. If you need conditional disposal, use `defer` + `finalize`.",
@@ -1445,7 +1445,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `using` when you need an **Observable tied to a disposable resource** where the resource object is structurally part of the story. Prefer `defer` + `finalize` for most cases — it's clearer and more idiomatic."
 	},
 	"window": {
-		"code": "",
+		"code": "import { fromEvent, interval } from 'rxjs'\nimport { window, mergeAll, take, map, toArray } from 'rxjs/operators'\n\ninterface ClickEvent {\n\tx: number\n\ty: number\n}\n\n// Count clicks per second\nconst click$ = fromEvent<MouseEvent>(document, 'click').pipe(\n\tmap((e: MouseEvent): ClickEvent => ({ x: e.clientX, y: e.clientY }))\n)\n\nconst clicksPerSecond$ = click$.pipe(\n\twindow(interval(1000)),\n\tmergeMap((win$: Observable<ClickEvent>) => win$.pipe(\n\t\ttoArray(),\n\t\tmap((clicks: ClickEvent[]) => clicks.length)\n\t))\n)\n\nclicksPerSecond$.subscribe((count: number) =>\n\tconsole.log(`Clicks this second: ${count}`)\n)",
 		"gotchas": [
 			"**`window` vs `buffer`** — `buffer` collects all window values into an array and emits once when the window closes; `window` emits a live inner Observable immediately when the window opens. Use `window` when you need to apply operators like `take`, `filter`, `reduce`, or `toArray` to each window as a stream; use `buffer` for simpler array-based processing.",
 			"**Must subscribe to (or compose) each inner Observable** — unlike `buffer`, `window` emits Observables. If you ignore the inner Observables without subscribing or flattening, their values are lost. Always use `mergeMap`, `switchMap`, `concatMap`, or `exhaustMap` on the outer Observable to process each window.",
@@ -1457,7 +1457,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `window` when you need to **apply operator pipelines to each time/event window as a live stream**. Use `buffer` when you only need the final collected array from each window."
 	},
 	"windowCount": {
-		"code": "",
+		"code": "import { range } from 'rxjs'\nimport { windowCount, mergeMap, reduce } from 'rxjs/operators'\n\n// Sum values in non-overlapping groups of 5\nconst numbers$ = range(1, 20)\n\nconst groupSums$ = numbers$.pipe(\n\twindowCount(5),\n\tmergeMap((win$: Observable<number>) =>\n\t\twin$.pipe(reduce((acc: number, v: number) => acc + v, 0))\n\t)\n)\n\ngroupSums$.subscribe((sum: number) => console.log('Group sum:', sum))\n// → 15, 40, 65, 90",
 		"gotchas": [
 			"**`windowCount` vs `bufferCount`** — `bufferCount` emits complete arrays; `windowCount` emits inner Observables. Use `windowCount` when you need to apply operators to each window's stream; use `bufferCount` when you only need the array.",
 			"**Must subscribe to or flatten each inner Observable** — same as `window`: always use a flattening operator (`mergeMap`, `concatMap`) to process inner windows. Unsubscribed windows lose their values.",
@@ -1469,7 +1469,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `windowCount` when you need to **apply operator pipelines to fixed-size batches as live streams**. Use `bufferCount` when a complete array per batch is sufficient. Use `startWindowEvery = 1` for sliding windows."
 	},
 	"windowTime": {
-		"code": "",
+		"code": "import { fromEvent, Observable } from 'rxjs';\nimport { windowTime, mergeMap, count } from 'rxjs/operators';\n\n// Scenario: detect click bursts — count clicks in each 1-second window\n// and flag windows with more than 5 clicks as \"rapid clicking\"\n\nconst click$ = fromEvent<MouseEvent>(document, 'click');\n\nconst clickRate$ = click$.pipe(\n\twindowTime(1000),\n\tmergeMap((window$: Observable<MouseEvent>) =>\n\t\twindow$.pipe(\n\t\t\tcount(),\n\t\t)\n\t),\n);\n\nclickRate$.subscribe((clicksInWindow: number) => {\n\tif (clicksInWindow > 5) {\n\t\tconsole.warn('Rapid clicking detected:', clicksInWindow, 'clicks/sec');\n\t}\n});",
 		"gotchas": [
 			"**Each window is a hot-ish Observable — you must subscribe to it** — `windowTime` emits Observable references downstream. If you use `mergeMap`/`switchMap` to process each window, you're fine. If you accidentally `tap` or `filter` the outer stream without subscribing to each inner window, those windows are never consumed and source values are buffered indefinitely, leaking memory.",
 			"**`windowTime` vs `bufferTime` — streaming vs array** — `bufferTime` collects values into arrays and emits the complete array when each window closes. `windowTime` emits an Observable immediately when the window opens, so you can react to values *within* the window as they arrive. Use `bufferTime` when you need the full collection; use `windowTime` when you need incremental processing or want to apply further operators to the sub-stream.",
@@ -1481,7 +1481,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `windowTime` when you need **all source values grouped into live time-bounded sub-streams** so you can apply further operators within each window. Prefer `bufferTime` instead when you only need the **complete array of values** after each window closes and don't need incremental processing within the window."
 	},
 	"windowToggle": {
-		"code": "",
+		"code": "import { fromEvent, interval } from 'rxjs'\nimport { windowToggle, mergeMap, toArray, map } from 'rxjs/operators'\nimport { timer } from 'rxjs'\n\ninterface MousePosition {\n\tx: number\n\ty: number\n}\n\n// Record mouse path only while mouse button is held\nconst mouseMove$ = fromEvent<MouseEvent>(document, 'mousemove').pipe(\n\tmap((e: MouseEvent): MousePosition => ({ x: e.clientX, y: e.clientY }))\n)\n\nconst mouseDown$ = fromEvent<MouseEvent>(document, 'mousedown')\nconst mouseUp$   = fromEvent<MouseEvent>(document, 'mouseup')\n\nconst paths$ = mouseMove$.pipe(\n\twindowToggle(mouseDown$, () => mouseUp$),\n\tmergeMap((win$: Observable<MousePosition>) => win$.pipe(toArray()))\n)\n\npaths$.subscribe((path: MousePosition[]) => {\n\tconsole.log(`Path captured: ${path.length} points`)\n\trenderPath(path)\n})",
 		"gotchas": [
 			"**Values outside open windows are discarded** — unlike `window` (which forwards all values), `windowToggle` only forwards values while a window is explicitly open. This is intentional — use `window` if you need all values.",
 			"**`windowToggle` vs `bufferToggle`** — both have identical open/close semantics; `bufferToggle` emits complete arrays, `windowToggle` emits inner Observables. Use `windowToggle` when you need operator-composable streaming access to each window.",
@@ -1493,7 +1493,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `windowToggle` when windows need **explicit independent open and close signals**, especially for **overlapping windows** or when window duration depends on what triggered the opening. Use `window` for simpler sequential event-driven windows."
 	},
 	"windowWhen": {
-		"code": "",
+		"code": "import { Subject, interval } from 'rxjs'\nimport { windowWhen, mergeMap, toArray, map, tap } from 'rxjs/operators'\nimport { timer } from 'rxjs'\n\ninterface Event {\n\tid: number\n\ttype: string\n}\n\nconst events$ = interval(50).pipe(\n\tmap((i: number): Event => ({ id: i, type: i % 3 === 0 ? 'heavy' : 'light' }))\n)\n\nlet lastWindowSize = 0\n\n// Adaptive window — longer gap after large windows (back-off)\nconst windowed$ = events$.pipe(\n\twindowWhen(() => {\n\t\tconst wait = lastWindowSize > 10 ? 1000 : 300\n\t\treturn timer(wait)\n\t}),\n\tmergeMap((win$: Observable<Event>) =>\n\t\twin$.pipe(\n\t\t\ttoArray(),\n\t\t\ttap((batch: Event[]) => { lastWindowSize = batch.length })\n\t\t)\n\t)\n)\n\nwindowed$.subscribe((batch: Event[]) =>\n\tconsole.log(`Window closed: ${batch.length} events`)\n)",
 		"gotchas": [
 			"**`windowWhen` vs `window`** — `window(notifier$)` subscribes to the notifier once and reuses it across all windows; `windowWhen(() => ...)` calls the factory fresh for each new window. Use `windowWhen` when the closing Observable is stateful, finite, or must vary between windows.",
 			"**`windowWhen` vs `bufferWhen`** — same semantics; `bufferWhen` emits complete arrays, `windowWhen` emits inner Observables. Use `windowWhen` when you need operator-composable streaming access.",
@@ -1505,7 +1505,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `windowWhen` when the **closing Observable must be recreated fresh for each window** — for adaptive, stateful, or one-shot boundaries. Use `window(notifier$)` when the same stateless notifier can be reused across all windows. Use `bufferWhen` when you only need the array, not streaming operator access."
 	},
 	"withLatestFrom": {
-		"code": "import { Subject, BehaviorSubject, withLatestFrom, Observable, map } from 'rxjs'\n\n// Scenario: command + current state — dispatch enriches each action with store state\ninterface Action { type: 'save' }\ninterface State { userId: string; draft: string }\n\nconst action$: Subject<Action> = new Subject<Action>()\nconst state$: BehaviorSubject<State> = new BehaviorSubject<State>({ userId: 'u1', draft: '' })\n\ninterface Command {\n\taction: Action\n\tuserId: string\n\tdraft: string\n}\n\nconst enriched$: Observable<Command> = action$.pipe(\n\twithLatestFrom(state$),\n\tmap(([action, state]: [Action, State]): Command => ({\n\t\taction,\n\t\tuserId: state.userId,\n\t\tdraft: state.draft,\n\t}))\n)",
+		"code": "",
 		"gotchas": [
 			"**Early source emissions are dropped** — if the source emits before every auxiliary has produced at least one value, those emissions vanish silently. Use `BehaviorSubject` auxiliaries (always have a value) or `startWith(seed)` to guarantee readiness.",
 			"**Auxiliary completion is ignored** — unlike `combineLatest`, one auxiliary completing does **not** complete the output. The last-seen value just keeps being used forever. This can mask bugs when you assumed the auxiliary would stay alive.",
@@ -1517,7 +1517,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `withLatestFrom` when the **primary source drives emission** and you want to enrich each value with the latest from other streams. Prefer `combineLatest` when any source should trigger an emission, or explicit `switchMap + take(1)` if \"always ready\" snapshots matter more than the \"latest\" semantics."
 	},
 	"zip": {
-		"code": "",
+		"code": "import { zip, of, interval } from 'rxjs'\nimport { map, take } from 'rxjs/operators'\n\ninterface LabelledTick {\n\tindex: number\n\tlabel: string\n}\n\nconst labels$ = of('alpha', 'beta', 'gamma', 'delta')\nconst ticks$ = interval(1000)\n\n// Pair each label with the corresponding tick index\nconst labelled$ = zip(labels$, ticks$).pipe(\n\tmap(([label, index]: [string, number]): LabelledTick => ({ label, index }))\n)\n\nlabelled$.subscribe((item: LabelledTick) => {\n\tconsole.log(`${item.index}: ${item.label}`)\n})\n// 0: alpha  (after 1s)\n// 1: beta   (after 2s)\n// 2: gamma  (after 3s)\n// 3: delta  (after 4s) — completes because labels$ exhausted",
 		"gotchas": [
 			"**`zip` is positional, not temporal** — unlike `combineLatest` which emits on every new value using the latest from each source, `zip` strictly pairs the 1st with the 1st, 2nd with the 2nd, etc. If one source is much faster, its values are buffered indefinitely until the slower source catches up — this can grow memory unboundedly.",
 			"**Completes on the shortest source** — surplus values from longer sources are silently discarded when any source completes. If this is unexpected, `combineLatest` with a `take` may be more appropriate.",
@@ -1529,7 +1529,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `zip` when sources have **matching lengths and positional correspondence is meaningful**. Prefer `combineLatest` when you want the latest value from each source on every emission, and `forkJoin` when you need the final value of parallel one-shot Observables."
 	},
 	"zipAll": {
-		"code": "",
+		"code": "import { of, interval } from 'rxjs'\nimport { map, zipAll, take } from 'rxjs/operators'\n\n// Dynamically create N timer streams and zip them positionally\nconst streams$ = of(1, 2, 3).pipe(\n\tmap((multiplier: number) =>\n\t\tinterval(multiplier * 100).pipe(\n\t\t\ttake(3),\n\t\t\tmap((i: number) => i * multiplier)\n\t\t)\n\t)\n)\n\n// zipAll waits for of(1,2,3) to complete, then zips the 3 interval streams\nconst zipped$ = streams$.pipe(zipAll())\n\nzipped$.subscribe((tuple: number[]) => {\n\tconsole.log(tuple)\n})\n// [0, 0, 0]\n// [1, 2, 3]\n// [2, 4, 6]",
 		"gotchas": [
 			"**Outer source must complete first** — this is the critical constraint that distinguishes `zipAll` from `zip`. If the outer source never completes (e.g. a `Subject` or `interval`), `zipAll` collects inner Observables indefinitely but never subscribes to any of them and never emits. This is the most common source of `zipAll` bugs.",
 			"**All inners are subscribed simultaneously** — `zipAll` subscribes to all collected inners at the moment the outer completes. Any emissions from inners that occurred before the outer completed are missed, since the inners were not subscribed to yet. Ensure inner Observables are cold (replay their emissions from the start on each subscription) or delay their data until after the outer completes.",
@@ -1540,7 +1540,7 @@ export const explanations: Record<string, OperatorExplanation> = {
 		"rule": "Use `zipAll` when you have a **dynamic higher-order Observable** and need **positional pairing** of all its inner Observables — and the outer source will definitely complete. Prefer static `zip` when the sources are known at compile time."
 	},
 	"zipWith": {
-		"code": "",
+		"code": "import { interval, of } from 'rxjs'\nimport { zipWith, map, take } from 'rxjs/operators'\n\nconst labels$ = of('first', 'second', 'third')\n\n// Pair each interval tick with a label, inside a pipe chain\nconst annotated$ = interval(500).pipe(\n\ttake(3),\n\tzipWith(labels$),\n\tmap(([tick, label]: [number, string]) => `Tick ${tick}: ${label}`)\n)\n\nannotated$.subscribe((msg: string) => console.log(msg))\n// Tick 0: first   (after 500ms)\n// Tick 1: second  (after 1000ms)\n// Tick 2: third   (after 1500ms)",
 		"gotchas": [
 			"**RxJS 7+ only** — `zipWith` does not exist in RxJS 6. For RxJS 6 compatibility, use the static `zip(source$, other$)` creation function.",
 			"**Same positional-pairing caveats as `zip`** — mismatched emission rates cause buffering; the shortest source determines when the output completes. See the `zip` entry for full details.",
