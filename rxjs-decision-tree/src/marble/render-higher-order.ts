@@ -35,6 +35,7 @@ function spawnPath(em: SourceEmission, innerIdx: number, inners: InnerObservable
 	const y1 = SOURCE_Y + CIRCLE_R
 	const x2 = x(inners[innerIdx].startTime, tt)
 	const y2 = innerY(innerIdx) - CIRCLE_R
+	// Integer time values assumed — strict equality is safe for all planned configs
 	if (em.time === inners[innerIdx].startTime) {
 		return `M ${x1},${y1} V ${y2}`
 	}
@@ -54,7 +55,7 @@ export function renderHigherOrderSVG(config: MarbleDiagramConfig): string {
 	const svgH = resultY + 55
 	const ghost = ghostPx(tt)
 
-	const sourceCircles = config.source.emissions.map((em: SourceEmission, ei: number) => {
+	const sourceCircles = config.source.emissions.map((em, ei) => {
 		const spawned = resolveSpawn(em, ei)
 		const op = spawned !== null ? 1 : 0.25
 		const sw = spawned !== null ? 2.5 : 1.5
@@ -73,14 +74,14 @@ export function renderHigherOrderSVG(config: MarbleDiagramConfig): string {
 			stroke="#475569" stroke-width="2.5"/>`
 		: ''
 
-	const spawnLines = config.source.emissions.map((em: SourceEmission, ei: number) => {
+	const spawnLines = config.source.emissions.map((em, ei) => {
 		const idx = resolveSpawn(em, ei)
 		if (idx === null) return ''
 		return `<path d="${spawnPath(em, idx, config.inners, tt)}"
 			stroke="${em.color}" stroke-width="1.5" stroke-dasharray="4,3" fill="none" opacity="0.6"/>`
 	}).join('\n')
 
-	const innerLanes = config.inners.map((inner: InnerObservable, i: number) => {
+	const innerLanes = config.inners.map((inner, i) => {
 		const iy = innerY(i)
 		const endX = x(inner.cancelledAt ?? inner.completedAt ?? tt, tt)
 

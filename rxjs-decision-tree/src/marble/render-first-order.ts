@@ -18,9 +18,9 @@ function x(t: number, totalTime: number): number {
 
 export function renderFirstOrderSVG(config: FirstOrderDiagramConfig): string {
 	const tt = config.totalTime
-	const active = config.source.values.filter((v: FirstOrderValue) => v.active)
+	const active = config.source.values.filter(v => v.active)
 
-	const sourceCircles = config.source.values.map((v: FirstOrderValue) => {
+	const sourceCircles = config.source.values.map(v => {
 		const cx = x(v.time, tt)
 		const op = v.active ? 1 : 0.25
 		const sw = v.active ? 2.5 : 1.5
@@ -39,7 +39,7 @@ export function renderFirstOrderSVG(config: FirstOrderDiagramConfig): string {
 			stroke="#475569" stroke-width="2.5"/>`
 		: ''
 
-	const dropLines = active.map((v: FirstOrderValue) => {
+	const dropLines = active.map(v => {
 		const x1 = x(v.time, tt)
 		const x2 = x(v.resultTime ?? v.time, tt)
 		return `<line x1="${x1}" y1="${SOURCE_Y + CIRCLE_R}"
@@ -47,7 +47,7 @@ export function renderFirstOrderSVG(config: FirstOrderDiagramConfig): string {
 			stroke="${v.color}" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.45"/>`
 	}).join('\n')
 
-	const resultCircles = active.map((v: FirstOrderValue) => {
+	const resultCircles = active.map(v => {
 		const cx = x(v.resultTime ?? v.time, tt)
 		return `<g>
 			<circle cx="${cx}" cy="${RESULT_Y}" r="${CIRCLE_R}"

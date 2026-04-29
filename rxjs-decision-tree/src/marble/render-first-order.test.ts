@@ -33,4 +33,21 @@ describe('renderFirstOrderSVG', () => {
 		expect(svg).toContain('opacity="1"')
 		expect(svg).toContain('opacity="0.25"')
 	})
+
+	test('resultTime shifts drop line and result circle to a different x position', () => {
+		const shifted: FirstOrderDiagramConfig = {
+			operatorName: 'delay',
+			totalTime: 10,
+			source: {
+				values: [{ time: 2, label: 'a', color: '#a78bfa', active: true, resultTime: 6 }],
+			},
+			result: {},
+		}
+		const svg = renderFirstOrderSVG(shifted)
+		// source circle at time=2, result circle at time=6 — x coords differ
+		const sourceX = 110 + (2 / 10) * (830 - 110)
+		const resultX = 110 + (6 / 10) * (830 - 110)
+		expect(svg).toContain(`cx="${sourceX}"`)
+		expect(svg).toContain(`cx="${resultX}"`)
+	})
 })
