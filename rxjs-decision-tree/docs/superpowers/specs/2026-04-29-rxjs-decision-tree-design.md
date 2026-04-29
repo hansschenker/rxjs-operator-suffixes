@@ -177,7 +177,9 @@ export const state$ = action$.pipe(
 ### Wiki link format
 
 ```typescript
-const WIKI_BASE = 'https://rxjs-wiki.your-domain.com'   // configurable constant
+// src/tree/tree.config.ts — top of file, one place to change
+export const WIKI_BASE = 'http://localhost:5174'   // dev: local VitePress wiki server
+                                                    // prod: update to deployed wiki URL
 const href = `${WIKI_BASE}${operator.wikiPath}`
 ```
 
@@ -359,12 +361,21 @@ const href = `${WIKI_BASE}${operator.wikiPath}`
 - Key invariants: `back` at root is a no-op; `breadcrumb.length === history.length` always; `reset` returns the exact initial object
 
 ```typescript
-// Example
-test('answer pushes to history and breadcrumb', () => {
-  const next = state after answering
+test('answer pushes node to history and label to breadcrumb', () => {
+  const branch = ROOT.branches[0]
+  const next = treeReducer(initial, { kind: 'answer', next: branch.next, label: branch.label })
   expect(next.currentNode).toBe(branch.next)
-  expect(next.history).toHaveLength(1)
-  expect(next.breadcrumb[0].label).toBe(branch.label)
+  expect(next.history).toEqual([ROOT])
+  expect(next.breadcrumb).toEqual([{ nodeId: ROOT.id, label: branch.label }])
+})
+
+test('back at root is a no-op', () => {
+  expect(treeReducer(initial, { kind: 'back' })).toBe(initial)
+})
+
+test('reset returns initial state', () => {
+  const afterAnswer = treeReducer(initial, { kind: 'answer', next: ROOT.branches[0].next, label: 'x' })
+  expect(treeReducer(afterAnswer, { kind: 'reset' })).toBe(initial)
 })
 ```
 
