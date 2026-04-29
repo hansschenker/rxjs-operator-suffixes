@@ -407,3 +407,150 @@ const MULTICAST: QuestionNode = {
 		},
 	],
 }
+
+// ── ⑧ Aggregation ─────────────────────────────────────────────────────────
+const AGGREGATION: QuestionNode = {
+	kind: 'question',
+	id: 'aggregation',
+	question: 'Emit each accumulated step, or one final result when the stream completes?',
+	branches: [
+		{
+			label: 'Emit each accumulated intermediate result (stream stays open)',
+			next: leaf('aggregation-scan', [
+				op('scan', 'Apply an accumulator and emit the running result after each source value.', '/operators/scan'),
+			]),
+		},
+		{
+			label: 'Emit a single final result when the source completes',
+			next: leaf('aggregation-reduce', [
+				op('reduce', 'Apply an accumulator and emit a single result when the source completes.', '/operators/reduce'),
+				op('toArray', 'Collect all values and emit them as a single array on completion.', '/operators/toArray', false),
+				op('count', 'Emit the total count of emitted values when the source completes.', '/operators/count', false),
+			]),
+		},
+	],
+}
+
+// ── ⑨ Conditional / Boolean ────────────────────────────────────────────────
+const CONDITIONAL: QuestionNode = {
+	kind: 'question',
+	id: 'conditional',
+	question: 'What yes/no question do you want to ask about the stream?',
+	branches: [
+		{
+			label: 'Does every emitted value satisfy a condition?',
+			next: leaf('conditional-every', [
+				op('every', 'Emit true if all values pass the predicate, false as soon as one fails.', '/operators/every'),
+			]),
+		},
+		{
+			label: 'Find the first value that matches a condition',
+			next: leaf('conditional-find', [
+				op('find', 'Emit the first value satisfying the predicate, then complete.', '/operators/find'),
+				op('findIndex', 'Emit the index of the first value satisfying the predicate, then complete.', '/operators/findIndex', false),
+			]),
+		},
+		{
+			label: 'Did the stream complete without emitting anything?',
+			next: leaf('conditional-isEmpty', [
+				op('isEmpty', 'Emit true if the source completes without emitting any values.', '/operators/isEmpty'),
+				op('defaultIfEmpty', 'Emit a default value if the source completes without emitting.', '/operators/defaultIfEmpty', false),
+			]),
+		},
+		{
+			label: 'Choose between two Observables based on a runtime condition',
+			next: leaf('conditional-iif', [
+				op('iif', 'Subscribe to one of two Observables based on a boolean condition at subscribe time.', '/operators/iif'),
+			]),
+		},
+	],
+}
+
+// ── ⑩ Hot vs Cold / Subjects ───────────────────────────────────────────────
+const HOT_COLD: QuestionNode = {
+	kind: 'question',
+	id: 'hotcold',
+	question: 'What do you need from the Subject?',
+	hint: 'Subjects are both Observables and Observers — they bridge imperative and reactive code.',
+	branches: [
+		{
+			label: 'Dispatch values imperatively with no initial value',
+			next: leaf('hotcold-Subject', [
+				op('Subject', 'A multicast Observable that allows imperative dispatch via next().', '/subjects/Subject'),
+			]),
+		},
+		{
+			label: 'Late subscribers need the current value immediately',
+			next: leaf('hotcold-BehaviorSubject', [
+				op('BehaviorSubject', 'Holds the current value and replays it immediately to new subscribers.', '/subjects/BehaviorSubject'),
+			]),
+		},
+		{
+			label: 'Late subscribers need the last N emitted values',
+			next: leaf('hotcold-ReplaySubject', [
+				op('ReplaySubject(n)', 'Replay the last n emissions to any new subscriber.', '/subjects/ReplaySubject'),
+			]),
+		},
+		{
+			label: 'Convert a cold Observable into a hot shared one',
+			next: leaf('hotcold-share', [
+				op('share()', 'Make a cold Observable hot by sharing one execution among all current subscribers.', '/operators/share'),
+				op('shareReplay(1)', 'Make hot and replay the last value to late subscribers.', '/operators/shareReplay', false),
+				op('publish', 'Multicast to a Subject — use with connect() for manual control.', '/operators/publish', false),
+			]),
+		},
+	],
+}
+
+// ── ⑪ Inspection / Side Effects ────────────────────────────────────────────
+const INSPECTION: QuestionNode = {
+	kind: 'question',
+	id: 'inspection',
+	question: 'What do you need to inspect or intercept in the stream?',
+	branches: [
+		{
+			label: 'Log or trigger a side effect without changing values',
+			next: leaf('inspection-tap', [
+				op('tap', 'Run a side effect (logging, debugging) at any point in the pipe without altering values.', '/operators/tap'),
+			]),
+		},
+		{
+			label: 'Convert next/error/complete notifications into value objects',
+			next: leaf('inspection-materialize', [
+				op('materialize', 'Wrap each notification (next, error, complete) into a Notification<T> value object.', '/operators/materialize'),
+			]),
+		},
+		{
+			label: 'Unwrap Notification objects back into stream signals',
+			next: leaf('inspection-dematerialize', [
+				op('dematerialize', 'Convert a stream of Notification objects back into a regular Observable stream.', '/operators/dematerialize'),
+			]),
+		},
+		{
+			label: 'Run cleanup code when the stream ends for any reason',
+			next: leaf('inspection-finalize', [
+				op('finalize', 'Run a callback when the source completes, errors, or is unsubscribed — like try/finally for streams.', '/operators/finalize'),
+			]),
+		},
+	],
+}
+
+// ── ROOT ───────────────────────────────────────────────────────────────────
+export const ROOT: QuestionNode = {
+	kind: 'question',
+	id: 'root',
+	question: 'How many Observables do you have?',
+	hint: 'The number of streams shapes every operator choice. Choose a concern on the left if none of the first four apply.',
+	branches: [
+		{ label: 'None — I need to create an Observable', next: CREATE },
+		{ label: 'One Observable', next: ONE },
+		{ label: 'Many Observables to combine', next: MANY },
+		{ label: 'One that emits Observables (nested / higher-order)', next: NESTED },
+		{ label: 'Error handling', next: ERROR },
+		{ label: 'Multicasting — share one source among subscribers', next: MULTICAST },
+		{ label: 'Aggregation — fold or accumulate values', next: AGGREGATION },
+		{ label: 'Conditional — boolean query about the stream', next: CONDITIONAL },
+		{ label: 'Hot vs Cold — Subjects and sharing', next: HOT_COLD },
+		{ label: 'Inspection — tap into the stream without changing it', next: INSPECTION },
+	],
+}
