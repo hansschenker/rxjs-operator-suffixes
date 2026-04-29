@@ -1,15 +1,17 @@
 // src/state/tree.reducer.ts
-import type { Action, TreeState, QuestionNode } from '../tree/tree.types'
+import type { Action, TreeState } from '../tree/tree.types'
 
-export function makeReducer(initial: TreeState) {
+export function makeReducer(initial: TreeState): (state: TreeState, action: Action) => TreeState {
 	return function treeReducer(state: TreeState, action: Action): TreeState {
 		switch (action.kind) {
-			case 'answer':
+			case 'answer': {
+				if (state.currentNode.kind !== 'question') return state
 				return {
 					currentNode: action.next,
-					history:     [...state.history, state.currentNode as QuestionNode],
+					history:     [...state.history, state.currentNode],
 					breadcrumb:  [...state.breadcrumb, { nodeId: state.currentNode.id, label: action.label }],
 				}
+			}
 			case 'back':
 				if (state.history.length === 0) return state
 				return {

@@ -1,6 +1,5 @@
 // src/state/tree.state.ts
-import { Subject } from 'rxjs'
-import { scan, startWith, shareReplay } from 'rxjs'
+import { Subject, scan, startWith, shareReplay } from 'rxjs'
 import { ROOT } from '../tree/tree.config'
 import { makeReducer } from './tree.reducer'
 import type { Action, TreeState } from '../tree/tree.types'
