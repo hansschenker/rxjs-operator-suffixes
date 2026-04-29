@@ -1,5 +1,5 @@
 // src/marble/render-first-order.ts
-import type { FirstOrderDiagramConfig, FirstOrderValue } from './marble.types'
+import type { FirstOrderDiagramConfig } from './marble.types'
 
 const SVG_W    = 900
 const LABEL_X  = 104
