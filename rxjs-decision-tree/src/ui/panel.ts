@@ -1,25 +1,26 @@
 // src/ui/panel.ts
 import { action$ } from '../state/tree.state'
+import type { PanelSlice } from '../state/tree.state'
 import { renderDetail } from './detail'
 import { escHtml } from './utils'
-import type { TreeState, LeafNode, QuestionNode, OperatorResult } from '../tree/tree.types'
+import type { LeafNode, QuestionNode, OperatorResult, BreadcrumbStep } from '../tree/tree.types'
 
-export function renderPanel(container: HTMLElement, state: TreeState): void {
+export function renderPanel(container: HTMLElement, state: PanelSlice): void {
 	if (state.detailView) {
 		renderDetail(container, state.detailView)
 		return
 	}
 
-	const { currentNode, breadcrumb, history } = state
+	const { currentNode, breadcrumb, historyLen } = state
 	if (currentNode.kind === 'question') {
-		renderQuestion(container, currentNode, breadcrumb, history.length)
+		renderQuestion(container, currentNode, breadcrumb, historyLen)
 	} else {
-		renderLeaf(container, currentNode, breadcrumb, history.length)
+		renderLeaf(container, currentNode, breadcrumb, historyLen)
 	}
 }
 
 function renderBreadcrumb(
-	breadcrumb: TreeState['breadcrumb'],
+	breadcrumb: BreadcrumbStep[],
 	terminalLabel: string,
 	terminalClass: string,
 ): string {
@@ -32,7 +33,7 @@ function renderBreadcrumb(
 function renderQuestion(
 	container: HTMLElement,
 	node: QuestionNode,
-	breadcrumb: TreeState['breadcrumb'],
+	breadcrumb: BreadcrumbStep[],
 	historyLen: number,
 ): void {
 	const bc = renderBreadcrumb(breadcrumb, node.question, 'current')
@@ -89,7 +90,7 @@ function renderOperator(op: OperatorResult): string {
 function renderLeaf(
 	container: HTMLElement,
 	node: LeafNode,
-	breadcrumb: TreeState['breadcrumb'],
+	breadcrumb: BreadcrumbStep[],
 	historyLen: number,
 ): void {
 	const bc = renderBreadcrumb(breadcrumb, '✓ Result', 'result')

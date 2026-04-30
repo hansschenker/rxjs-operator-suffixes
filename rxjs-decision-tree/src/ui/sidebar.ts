@@ -1,9 +1,10 @@
 // src/ui/sidebar.ts
 import { ROOT } from '../tree/tree.config'
 import { action$ } from '../state/tree.state'
-import type { TreeNode, TreeState } from '../tree/tree.types'
+import type { SidebarSlice } from '../state/tree.state'
+import type { TreeNode } from '../tree/tree.types'
 
-export function renderSidebar(container: HTMLElement, state: TreeState): void {
+export function renderSidebar(container: HTMLElement, state: SidebarSlice): void {
 	const activeIds = new Set(state.breadcrumb.map(s => s.nodeId))
 
 	container.innerHTML = `

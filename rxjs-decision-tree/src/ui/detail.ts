@@ -1,18 +1,13 @@
 // src/ui/detail.ts
 import { action$ } from '../state/tree.state'
-import { getMarbleSVG } from '../marble/configs/index'
-import { explanations } from '../data/explanations'
+import { getOperatorDetail } from '../data/operator-detail'
 import { WIKI_BASE } from '../tree/tree.config'
 import { escHtml } from './utils'
 import type { DetailView } from '../tree/tree.types'
 
 export function renderDetail(container: HTMLElement, detail: DetailView): void {
 	const { operatorName, oneliner, wikiPath } = detail
-
-	// Registry key is wikiPath's last segment — matches operatorName in explanations
-	const cacheKey = wikiPath.split('/').pop() ?? operatorName
-	const explanation = explanations[cacheKey]
-	const marbleSVG  = getMarbleSVG(wikiPath)
+	const { marbleSVG, explanation } = getOperatorDetail(wikiPath)
 
 	const marbleSection = marbleSVG
 		? `<div class="detail-marble">${marbleSVG}</div>`
