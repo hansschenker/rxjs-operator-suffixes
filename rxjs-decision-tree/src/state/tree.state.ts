@@ -50,6 +50,7 @@ export const panelState$ = state$.pipe(
 	distinctUntilChanged((a, b) =>
 		a.currentNode === b.currentNode &&
 		a.historyLen  === b.historyLen  &&
+		a.breadcrumb  === b.breadcrumb  &&
 		a.detailView  === b.detailView
 	),
 )
