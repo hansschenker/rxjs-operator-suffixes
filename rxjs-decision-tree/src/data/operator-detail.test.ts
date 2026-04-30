@@ -25,5 +25,7 @@ describe('getOperatorDetail', () => {
 	test('works for subject paths (/subjects/BehaviorSubject)', () => {
 		const result = getOperatorDetail('/subjects/BehaviorSubject')
 		expect(result.marbleSVG).toBeTypeOf('string')
+		expect(result.marbleSVG).toMatch(/^<svg/)
+		expect(result.explanation).not.toBeNull()
 	})
 })
