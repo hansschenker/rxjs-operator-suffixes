@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, afterEach } from 'vitest';
 import { firstValueFrom } from 'rxjs';
-import type { Todo } from '../shared/types';
+import type { Todo } from './todo.service';
 
 const mockTodo: Todo = {
 	id: '1',

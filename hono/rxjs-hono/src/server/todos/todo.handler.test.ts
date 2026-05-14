@@ -3,7 +3,8 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import * as schema from '../db/schema';
 import { createApp } from '../app';
-import type { Todo } from '../../shared/types';
+import type { z } from 'zod';
+type Todo = z.infer<typeof schema.TodoSchema>;
 
 function createTestDb() {
 	const sqlite = new Database(':memory:');

@@ -21,12 +21,11 @@ export function createApp(db: Db) {
 				return c.json({ message: 'Validation error', errors: result.error }, 422);
 			}
 		},
-	});
-
-	app.openapi(listTodosRoute, makeListTodosHandler(db));
-	app.openapi(createTodoRoute, makeCreateTodoHandler(db));
-	app.openapi(updateTodoRoute, makeUpdateTodoHandler(db));
-	app.openapi(deleteTodoRoute, makeDeleteTodoHandler(db));
+	})
+		.openapi(listTodosRoute, makeListTodosHandler(db))
+		.openapi(createTodoRoute, makeCreateTodoHandler(db))
+		.openapi(updateTodoRoute, makeUpdateTodoHandler(db))
+		.openapi(deleteTodoRoute, makeDeleteTodoHandler(db));
 
 	app.doc('/openapi.json', {
 		openapi: '3.0.0',
@@ -37,3 +36,5 @@ export function createApp(db: Db) {
 
 	return app;
 }
+
+export type AppType = ReturnType<typeof createApp>;

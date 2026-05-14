@@ -1,6 +1,6 @@
 import { describe, test, expect, vi } from 'vitest';
 import { h } from '../h';
-import type { Todo } from '../../shared/types';
+import type { Todo } from '../todo.service';
 
 // h must be in scope for JSX transform
 void h;

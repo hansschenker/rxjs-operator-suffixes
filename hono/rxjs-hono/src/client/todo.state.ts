@@ -1,6 +1,6 @@
 import { Subject } from 'rxjs';
 import { scan, startWith, shareReplay } from 'rxjs/operators';
-import type { Todo } from '../shared/types';
+import type { Todo } from './todo.service';
 
 export type Action =
 	| { type: 'LOAD_SUCCESS'; todos: Todo[] }

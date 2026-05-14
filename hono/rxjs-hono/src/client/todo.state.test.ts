@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { reducer, initialState } from './todo.state';
-import type { Todo } from '../shared/types';
+import type { Todo } from './todo.service';
 
 const mockTodo: Todo = {
 	id: '1',
