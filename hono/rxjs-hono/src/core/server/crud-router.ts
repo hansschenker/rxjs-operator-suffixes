@@ -43,8 +43,9 @@ export function createCrudRouter(
 		},
 	});
 
-	// (table as any).id is safe — every entity schema is required to define an `id` text primary key
+	// every entity schema is required to define an `id` text primary key
 	const idCol = (table as any).id;
+	if (!idCol) throw new Error(`createCrudRouter: table must have an 'id' column`);
 
 	return new OpenAPIHono({
 		defaultHook: (result, c) => {
