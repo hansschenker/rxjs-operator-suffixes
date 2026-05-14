@@ -1,5 +1,5 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
-import { apiReference } from '@scalar/hono-api-reference';
+import { swaggerUI } from '@hono/swagger-ui';
 import type { Db } from './db/index';
 import {
 	listTodosRoute,
@@ -32,7 +32,7 @@ export function createApp(db: Db) {
 		info: { title: 'Todos API', version: '1.0.0' },
 	});
 
-	app.get('/docs', apiReference({ spec: { url: '/openapi.json' } }));
+	app.get('/docs', swaggerUI({ url: '/openapi.json' }));
 
 	return app;
 }
