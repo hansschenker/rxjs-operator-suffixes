@@ -12,6 +12,7 @@ const listEl = document.getElementById('todo-list')!;
 const errorEl = document.getElementById('error-msg')!;
 const form = document.getElementById('add-form') as HTMLFormElement;
 const titleInput = document.getElementById('title-input') as HTMLInputElement;
+const prioritySelect = document.getElementById('priority-select') as HTMLSelectElement;
 
 // Boot: load all todos
 getAll$().subscribe({
@@ -23,10 +24,10 @@ getAll$().subscribe({
 fromEvent<SubmitEvent>(form, 'submit')
 	.pipe(
 		tap(e => e.preventDefault()),
-		map(() => titleInput.value.trim()),
-		filter(title => title.length > 0),
-		exhaustMap(title =>
-			create$({ title }).pipe(
+		map(() => ({ title: titleInput.value.trim(), priority: Number(prioritySelect.value) })),
+		filter(({ title }) => title.length > 0),
+		exhaustMap(body =>
+			create$(body).pipe(
 				tap(todo => dispatch({ type: 'CREATE_SUCCESS', todo })),
 				tap(() => {
 					titleInput.value = '';

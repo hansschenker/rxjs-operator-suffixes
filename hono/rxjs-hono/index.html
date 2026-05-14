@@ -10,6 +10,11 @@
 	<p id="error-msg" style="color:red;min-height:1.2em;"></p>
 	<form id="add-form">
 		<input id="title-input" type="text" placeholder="New todo…" required />
+		<select id="priority-select">
+			<option value="1">🔵 Low</option>
+			<option value="2" selected>🟡 Med</option>
+			<option value="3">🔴 High</option>
+		</select>
 		<button type="submit">Add</button>
 	</form>
 	<ul id="todo-list"></ul>
