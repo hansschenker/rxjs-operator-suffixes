@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@marblejs/core": "^4.1.0",
+    "@marblejs/http": "^4.1.0",
     "@marblejs/middleware-body": "^4.1.0",
     "@marblejs/middleware-io": "^4.1.0",
     "fp-ts": "^2.16.0",
