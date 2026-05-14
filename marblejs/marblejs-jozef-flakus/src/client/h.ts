@@ -21,7 +21,7 @@ export function h(
 			if (key.startsWith('on') && typeof value === 'function') {
 				el.addEventListener(key.slice(2).toLowerCase(), value as EventListener);
 			} else if (key === 'className') {
-				el.className = value as string;
+				if (value != null) el.className = value as string;
 			} else if (BOOL_PROPS.has(key)) {
 				(el as unknown as Record<string, unknown>)[key] = Boolean(value);
 			} else if (value !== undefined && value !== null) {
