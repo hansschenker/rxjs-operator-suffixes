@@ -1,7 +1,7 @@
 import { firstValueFrom, of } from 'rxjs';
 import type { HttpRequest } from '@marblejs/http';
 import { resetStore, setTodos, getTodos } from './todo.store';
-import { getAll$, create$ } from './todo.effect';
+import { getAll$, create$, update$, delete$ } from './todo.effect';
 
 const mockReq = (overrides: Partial<HttpRequest> = {}): HttpRequest =>
 	({ params: {}, query: {}, body: {}, headers: {}, ...overrides } as unknown as HttpRequest);
@@ -39,5 +39,44 @@ describe('create$', () => {
 		const req$ = of(mockReq({ body: { title: 'Appended' } }));
 		await firstValueFrom(create$(req$));
 		expect(getTodos().some((t: any) => t.title === 'Appended')).toBe(true);
+	});
+});
+
+describe('update$', () => {
+	beforeEach(() => {
+		resetStore();
+		setTodos([{ id: '1', title: 'Original', completed: false, createdAt: '2026-01-01T00:00:00.000Z' }]);
+	});
+
+	it('updates the todo and returns it', async () => {
+		const req$ = of(mockReq({ params: { id: '1' } as any, body: { completed: true } }));
+		const res = await firstValueFrom(update$(req$));
+		expect((res.body as any).completed).toBe(true);
+		expect((res.body as any).title).toBe('Original');
+	});
+
+	it('persists the update to the store', async () => {
+		const req$ = of(mockReq({ params: { id: '1' } as any, body: { title: 'Updated' } }));
+		await firstValueFrom(update$(req$));
+		expect(getTodos()[0].title).toBe('Updated');
+	});
+});
+
+describe('delete$', () => {
+	beforeEach(() => {
+		resetStore();
+		setTodos([{ id: '1', title: 'To delete', completed: false, createdAt: '2026-01-01T00:00:00.000Z' }]);
+	});
+
+	it('returns 204 with empty body', async () => {
+		const req$ = of(mockReq({ params: { id: '1' } as any }));
+		const res = await firstValueFrom(delete$(req$));
+		expect(res.status).toBe(204);
+	});
+
+	it('removes the todo from the store', async () => {
+		const req$ = of(mockReq({ params: { id: '1' } as any }));
+		await firstValueFrom(delete$(req$));
+		expect(getTodos()).toHaveLength(0);
 	});
 });
