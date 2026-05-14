@@ -1,72 +1,8 @@
-import { h } from './h';
-import { state$, dispatch } from './todo.state';
-import { getAll$, create$, update$, remove$ } from './todo.service';
-import { TodoItem } from './components/todo-item';
-import { EMPTY, fromEvent } from 'rxjs';
-import { catchError, exhaustMap, filter, map, tap } from 'rxjs/operators';
+import { mountEntityPanel } from '../core/client/entity-panel';
+import { CreateTodoSchema } from '../entities/todos/schema';
 
-// h must be in scope for JSX transform
-void h;
-
-const listEl = document.getElementById('todo-list')!;
-const errorEl = document.getElementById('error-msg')!;
-const form = document.getElementById('add-form') as HTMLFormElement;
-const titleInput = document.getElementById('title-input') as HTMLInputElement;
-const prioritySelect = document.getElementById('priority-select') as HTMLSelectElement;
-const dueDateInput = document.getElementById('due-date-input') as HTMLInputElement;
-
-// Boot: load all todos
-getAll$().subscribe({
-	next: todos => dispatch({ type: 'LOAD_SUCCESS', todos }),
-	error: () => dispatch({ type: 'SET_ERROR', message: 'Failed to load todos.' }),
-});
-
-// Form submit: create a new todo
-fromEvent<SubmitEvent>(form, 'submit')
-	.pipe(
-		tap(e => e.preventDefault()),
-		map(() => ({
-			title: titleInput.value.trim(),
-			priority: Number(prioritySelect.value),
-			dueDate: dueDateInput.value || null,
-		})),
-		filter(({ title }) => title.length > 0),
-		exhaustMap(body =>
-			create$(body).pipe(
-				tap(todo => dispatch({ type: 'CREATE_SUCCESS', todo })),
-				tap(() => {
-					titleInput.value = '';
-					dueDateInput.value = '';
-				}),
-				catchError(() => {
-					dispatch({ type: 'SET_ERROR', message: 'Failed to create todo.' });
-					return EMPTY;
-				}),
-			),
-		),
-	)
-	.subscribe();
-
-// Render loop
-state$.subscribe(({ todos, error }) => {
-	errorEl.textContent = error ?? '';
-	listEl.innerHTML = '';
-
-	todos.forEach(todo => {
-		listEl.appendChild(
-			<TodoItem
-				todo={todo}
-				onToggle={() => {
-					update$(todo.id, { completed: !todo.completed })
-						.pipe(catchError(() => EMPTY))
-						.subscribe(updated => dispatch({ type: 'UPDATE_SUCCESS', todo: updated }));
-				}}
-				onDelete={() => {
-					remove$(todo.id)
-						.pipe(catchError(() => EMPTY))
-						.subscribe(() => dispatch({ type: 'DELETE_SUCCESS', id: todo.id }));
-				}}
-			/>,
-		);
-	});
+mountEntityPanel({
+	el:       document.getElementById('todos')!,
+	basePath: '/api/todos',
+	schema:   CreateTodoSchema,
 });

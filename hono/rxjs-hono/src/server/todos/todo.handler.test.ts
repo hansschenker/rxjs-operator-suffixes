@@ -1,20 +1,21 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import * as schema from '../db/schema';
+import * as schema from '../../entities/todos/schema';
 import { createApp } from '../app';
 import type { z } from 'zod';
+
 type Todo = z.infer<typeof schema.TodoSchema>;
 
 function createTestDb() {
 	const sqlite = new Database(':memory:');
 	sqlite.exec(`
 		CREATE TABLE todos (
-			id TEXT PRIMARY KEY NOT NULL,
-			title TEXT NOT NULL,
-			completed INTEGER NOT NULL DEFAULT 0,
-			priority INTEGER NOT NULL DEFAULT 2,
-			due_date TEXT,
+			id         TEXT PRIMARY KEY NOT NULL,
+			title      TEXT NOT NULL,
+			completed  INTEGER NOT NULL DEFAULT 0,
+			priority   INTEGER NOT NULL DEFAULT 2,
+			due_date   TEXT,
 			created_at TEXT NOT NULL
 		)
 	`);
@@ -23,7 +24,6 @@ function createTestDb() {
 
 describe('GET /todos', () => {
 	let app: ReturnType<typeof createApp>;
-
 	beforeEach(() => { app = createApp(createTestDb()); });
 
 	test('returns 200 with empty array when no todos exist', async () => {
@@ -35,14 +35,13 @@ describe('GET /todos', () => {
 
 describe('POST /todos', () => {
 	let app: ReturnType<typeof createApp>;
-
 	beforeEach(() => { app = createApp(createTestDb()); });
 
 	test('returns 201 with created todo', async () => {
 		const res = await app.request('/todos', {
-			method: 'POST',
+			method:  'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ title: 'Buy milk' }),
+			body:    JSON.stringify({ title: 'Buy milk' }),
 		});
 		expect(res.status).toBe(201);
 		const todo = await res.json() as Todo;
@@ -54,9 +53,9 @@ describe('POST /todos', () => {
 
 	test('returns 422 for missing title', async () => {
 		const res = await app.request('/todos', {
-			method: 'POST',
+			method:  'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({}),
+			body:    JSON.stringify({}),
 		});
 		expect(res.status).toBe(422);
 	});
@@ -64,20 +63,19 @@ describe('POST /todos', () => {
 
 describe('PUT /todos/:id', () => {
 	let app: ReturnType<typeof createApp>;
-
 	beforeEach(() => { app = createApp(createTestDb()); });
 
 	test('returns 200 with updated todo', async () => {
 		const created = await (await app.request('/todos', {
-			method: 'POST',
+			method:  'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ title: 'Buy milk' }),
+			body:    JSON.stringify({ title: 'Buy milk' }),
 		})).json() as Todo;
 
 		const res = await app.request(`/todos/${created.id}`, {
-			method: 'PUT',
+			method:  'PUT',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ completed: true }),
+			body:    JSON.stringify({ completed: true }),
 		});
 		expect(res.status).toBe(200);
 		const updated = await res.json() as Todo;
@@ -87,9 +85,9 @@ describe('PUT /todos/:id', () => {
 
 	test('returns 404 for unknown id', async () => {
 		const res = await app.request('/todos/nonexistent', {
-			method: 'PUT',
+			method:  'PUT',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ completed: true }),
+			body:    JSON.stringify({ completed: true }),
 		});
 		expect(res.status).toBe(404);
 	});
@@ -97,14 +95,13 @@ describe('PUT /todos/:id', () => {
 
 describe('DELETE /todos/:id', () => {
 	let app: ReturnType<typeof createApp>;
-
 	beforeEach(() => { app = createApp(createTestDb()); });
 
 	test('returns 204 and removes the todo', async () => {
 		const created = await (await app.request('/todos', {
-			method: 'POST',
+			method:  'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ title: 'Buy milk' }),
+			body:    JSON.stringify({ title: 'Buy milk' }),
 		})).json() as Todo;
 
 		const del = await app.request(`/todos/${created.id}`, { method: 'DELETE' });

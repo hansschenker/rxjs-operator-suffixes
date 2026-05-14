@@ -1,18 +1,13 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { swaggerUI } from '@hono/swagger-ui';
 import type { Db } from './db/index';
+import { createCrudRouter } from '../core/server/crud-router';
 import {
-	listTodosRoute,
-	createTodoRoute,
-	updateTodoRoute,
-	deleteTodoRoute,
-} from './todos/todo.routes';
-import {
-	makeListTodosHandler,
-	makeCreateTodoHandler,
-	makeUpdateTodoHandler,
-	makeDeleteTodoHandler,
-} from './todos/todo.handler';
+	todos,
+	TodoSchema,
+	CreateTodoSchema,
+	UpdateTodoSchema,
+} from '../entities/todos/schema';
 
 export function createApp(db: Db) {
 	const app = new OpenAPIHono({
@@ -21,17 +16,18 @@ export function createApp(db: Db) {
 				return c.json({ message: 'Validation error', errors: result.error }, 422);
 			}
 		},
-	})
-		.openapi(listTodosRoute, makeListTodosHandler(db))
-		.openapi(createTodoRoute, makeCreateTodoHandler(db))
-		.openapi(updateTodoRoute, makeUpdateTodoHandler(db))
-		.openapi(deleteTodoRoute, makeDeleteTodoHandler(db));
+	});
+
+	app.route('/todos', createCrudRouter(db, todos, {
+		select: TodoSchema,
+		create: CreateTodoSchema,
+		update: UpdateTodoSchema,
+	}));
 
 	app.doc('/openapi.json', {
 		openapi: '3.0.0',
-		info: { title: 'Todos API', version: '1.0.0' },
+		info:    { title: 'Generic CRUD API', version: '2.0.0' },
 	});
-
 	app.get('/docs', swaggerUI({ url: '/openapi.json' }));
 
 	return app;
