@@ -20,6 +20,9 @@ export function TodoItem(props: Props): HTMLElement {
 			<input type='checkbox' checked={todo.completed} onChange={onToggle} />
 			<span style={todo.completed ? 'text-decoration:line-through' : ''}>{todo.title}</span>
 			<small style='margin-left:0.5em;opacity:0.7'>{PRIORITY_LABEL[todo.priority] ?? String(todo.priority)}</small>
+			{todo.dueDate
+				? <small style='margin-left:0.5em;opacity:0.7'>📅 {todo.dueDate}</small>
+				: null}
 			<button onClick={onDelete}>Delete</button>
 		</li>
 	);
