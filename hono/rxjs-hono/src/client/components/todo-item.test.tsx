@@ -9,6 +9,7 @@ const mockTodo: Todo = {
 	id: '1',
 	title: 'Test todo',
 	completed: false,
+	priority: 2,
 	createdAt: '2026-01-01T00:00:00.000Z',
 };
 

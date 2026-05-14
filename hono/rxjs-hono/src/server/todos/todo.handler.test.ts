@@ -12,6 +12,7 @@ function createTestDb() {
 			id TEXT PRIMARY KEY NOT NULL,
 			title TEXT NOT NULL,
 			completed INTEGER NOT NULL DEFAULT 0,
+			priority INTEGER NOT NULL DEFAULT 2,
 			created_at TEXT NOT NULL
 		)
 	`);
