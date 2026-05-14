@@ -1,3 +1,4 @@
+// src/core/client/crud-state.test.ts
 import { describe, test, expect } from 'vitest';
 import { firstValueFrom } from 'rxjs';
 import { skip } from 'rxjs/operators';
@@ -18,60 +19,69 @@ describe('createCrudState<T>', () => {
 
 	test('LOAD_SUCCESS replaces items and clears error', async () => {
 		const { state$, dispatch } = createCrudState<Item>();
+		const result = firstValueFrom(state$.pipe(skip(2)));
 		dispatch({ type: 'SET_ERROR', message: 'old' });
 		dispatch({ type: 'LOAD_SUCCESS', items: [a] });
-		const state = await firstValueFrom(state$.pipe(skip(2)));
+		const state = await result;
 		expect(state.items).toEqual([a]);
 		expect(state.error).toBeNull();
 	});
 
 	test('CREATE_SUCCESS appends item', async () => {
 		const { state$, dispatch } = createCrudState<Item>();
+		const result = firstValueFrom(state$.pipe(skip(1)));
 		dispatch({ type: 'CREATE_SUCCESS', item: a });
-		const state = await firstValueFrom(state$.pipe(skip(1)));
+		const state = await result;
 		expect(state.items).toHaveLength(1);
 		expect(state.items[0]).toEqual(a);
 	});
 
 	test('UPDATE_SUCCESS replaces matching item by id', async () => {
 		const { state$, dispatch } = createCrudState<Item>();
+		const result = firstValueFrom(state$.pipe(skip(2)));
 		dispatch({ type: 'LOAD_SUCCESS', items: [a, b] });
 		dispatch({ type: 'UPDATE_SUCCESS', item: { id: '1', name: 'Alpha Updated' } });
-		const state = await firstValueFrom(state$.pipe(skip(2)));
+		const state = await result;
 		expect(state.items[0].name).toBe('Alpha Updated');
 		expect(state.items[1]).toEqual(b);
 	});
 
 	test('UPDATE_SUCCESS leaves non-matching items unchanged', async () => {
 		const { state$, dispatch } = createCrudState<Item>();
+		const result = firstValueFrom(state$.pipe(skip(2)));
 		dispatch({ type: 'LOAD_SUCCESS', items: [a, b] });
 		dispatch({ type: 'UPDATE_SUCCESS', item: { id: '1', name: 'Alpha Updated' } });
-		const state = await firstValueFrom(state$.pipe(skip(2)));
+		const state = await result;
 		expect(state.items[1]).toEqual(b);
 	});
 
 	test('DELETE_SUCCESS removes item by id', async () => {
 		const { state$, dispatch } = createCrudState<Item>();
+		const result = firstValueFrom(state$.pipe(skip(2)));
 		dispatch({ type: 'LOAD_SUCCESS', items: [a, b] });
 		dispatch({ type: 'DELETE_SUCCESS', id: '1' });
-		const state = await firstValueFrom(state$.pipe(skip(2)));
+		const state = await result;
 		expect(state.items).toHaveLength(1);
 		expect(state.items[0]).toEqual(b);
 	});
 
 	test('SET_ERROR records message', async () => {
 		const { state$, dispatch } = createCrudState<Item>();
+		const result = firstValueFrom(state$.pipe(skip(1)));
 		dispatch({ type: 'SET_ERROR', message: 'Network error' });
-		const state = await firstValueFrom(state$.pipe(skip(1)));
+		const state = await result;
 		expect(state.error).toBe('Network error');
 	});
 
 	test('reducer is pure — does not mutate frozen input', async () => {
 		const { state$, dispatch } = createCrudState<Item>();
+		const result = firstValueFrom(state$.pipe(skip(1)));
 		dispatch({ type: 'LOAD_SUCCESS', items: [a] });
-		const snapshot = await firstValueFrom(state$.pipe(skip(1)));
+		const snapshot = await result;
 		Object.freeze(snapshot);
 		Object.freeze(snapshot.items);
-		expect(() => dispatch({ type: 'DELETE_SUCCESS', id: '1' })).not.toThrow();
+		const result2 = firstValueFrom(state$.pipe(skip(1)));
+		dispatch({ type: 'DELETE_SUCCESS', id: '1' });
+		await result2;
 	});
 });

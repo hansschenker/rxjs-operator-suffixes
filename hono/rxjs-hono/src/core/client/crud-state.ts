@@ -39,11 +39,8 @@ export function createCrudState<T extends { id: string }>() {
 	const state$ = action$.pipe(
 		scan(crudReducer<T>, { items: [], error: null }),
 		startWith({ items: [], error: null } as CrudState<T>),
-		shareReplay(),
+		shareReplay(1),
 	);
-
-	// Eagerly subscribe to ensure emissions are processed
-	state$.subscribe();
 
 	const dispatch = (action: CrudAction<T>): void => action$.next(action);
 	return { action$, state$, dispatch };
