@@ -1,6 +1,6 @@
 import { firstValueFrom, of } from 'rxjs';
 import type { HttpRequest } from '@marblejs/http';
-import { resetStore, setTodos } from './todo.store';
+import { resetStore, setTodos, getTodos } from './todo.store';
 import { getAll$, create$ } from './todo.effect';
 
 const mockReq = (overrides: Partial<HttpRequest> = {}): HttpRequest =>
@@ -38,7 +38,6 @@ describe('create$', () => {
 	it('appends the new todo to the store', async () => {
 		const req$ = of(mockReq({ body: { title: 'Appended' } }));
 		await firstValueFrom(create$(req$));
-		const { getTodos } = await import('./todo.store');
 		expect(getTodos().some((t: any) => t.title === 'Appended')).toBe(true);
 	});
 });
