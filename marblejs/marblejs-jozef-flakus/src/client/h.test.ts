@@ -1,4 +1,4 @@
-import { h } from './h';
+import { h, type Props } from './h';
 
 describe('h() — element creation', () => {
 	it('creates element with correct tag', () => {
@@ -51,8 +51,8 @@ describe('h() — element creation', () => {
 	});
 
 	it('calls function components with props and children', () => {
-		const MyComp = (props: { label: string } | null) =>
-			h('span', { className: 'comp' }, props?.label ?? '');
+		const MyComp = (props: Props) =>
+			h('span', { className: 'comp' }, (props as { label: string } | null)?.label ?? '');
 		const el = h(MyComp, { label: 'test' });
 		expect(el.tagName).toBe('SPAN');
 		expect(el.textContent).toBe('test');

@@ -15,7 +15,7 @@ const mockTodo: Todo = { id: '1', title: 'Test', completed: false, createdAt: '2
 const mockResponse = (data: unknown) =>
 	of({ json: () => Promise.resolve(data) } as unknown as Response);
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); });
 
 describe('getAll$', () => {
 	it('fetches GET /api/todos and returns Todo[]', async () => {

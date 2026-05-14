@@ -11,14 +11,14 @@ describe('getAll$', () => {
 
 	it('returns all todos as body', async () => {
 		const req$ = of(mockReq());
-		const res = await firstValueFrom(getAll$(req$));
+		const res = await firstValueFrom(getAll$(req$, undefined as any));
 		expect(Array.isArray(res.body)).toBe(true);
 		expect((res.body as any[]).length).toBeGreaterThan(0);
 	});
 
 	it('returns 200 status (default — status undefined means 200)', async () => {
 		const req$ = of(mockReq());
-		const res = await firstValueFrom(getAll$(req$));
+		const res = await firstValueFrom(getAll$(req$, undefined as any));
 		expect(res.status).toBeUndefined();
 	});
 });
@@ -28,7 +28,7 @@ describe('create$', () => {
 
 	it('creates a new todo and returns 201', async () => {
 		const req$ = of(mockReq({ body: { title: 'New todo' } }));
-		const res = await firstValueFrom(create$(req$));
+		const res = await firstValueFrom(create$(req$, undefined as any));
 		expect(res.status).toBe(201);
 		expect((res.body as any).title).toBe('New todo');
 		expect((res.body as any).completed).toBe(false);
@@ -37,7 +37,7 @@ describe('create$', () => {
 
 	it('appends the new todo to the store', async () => {
 		const req$ = of(mockReq({ body: { title: 'Appended' } }));
-		await firstValueFrom(create$(req$));
+		await firstValueFrom(create$(req$, undefined as any));
 		expect(getTodos().some((t: any) => t.title === 'Appended')).toBe(true);
 	});
 });
@@ -50,14 +50,14 @@ describe('update$', () => {
 
 	it('updates the todo and returns it', async () => {
 		const req$ = of(mockReq({ params: { id: '1' } as any, body: { completed: true } }));
-		const res = await firstValueFrom(update$(req$));
+		const res = await firstValueFrom(update$(req$, undefined as any));
 		expect((res.body as any).completed).toBe(true);
 		expect((res.body as any).title).toBe('Original');
 	});
 
 	it('persists the update to the store', async () => {
 		const req$ = of(mockReq({ params: { id: '1' } as any, body: { title: 'Updated' } }));
-		await firstValueFrom(update$(req$));
+		await firstValueFrom(update$(req$, undefined as any));
 		expect(getTodos()[0].title).toBe('Updated');
 	});
 });
@@ -70,13 +70,13 @@ describe('delete$', () => {
 
 	it('returns 204 with empty body', async () => {
 		const req$ = of(mockReq({ params: { id: '1' } as any }));
-		const res = await firstValueFrom(delete$(req$));
+		const res = await firstValueFrom(delete$(req$, undefined as any));
 		expect(res.status).toBe(204);
 	});
 
 	it('removes the todo from the store', async () => {
 		const req$ = of(mockReq({ params: { id: '1' } as any }));
-		await firstValueFrom(delete$(req$));
+		await firstValueFrom(delete$(req$, undefined as any));
 		expect(getTodos()).toHaveLength(0);
 	});
 });
