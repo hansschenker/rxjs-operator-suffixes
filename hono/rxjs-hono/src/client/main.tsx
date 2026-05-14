@@ -13,6 +13,7 @@ const errorEl = document.getElementById('error-msg')!;
 const form = document.getElementById('add-form') as HTMLFormElement;
 const titleInput = document.getElementById('title-input') as HTMLInputElement;
 const prioritySelect = document.getElementById('priority-select') as HTMLSelectElement;
+const dueDateInput = document.getElementById('due-date-input') as HTMLInputElement;
 
 // Boot: load all todos
 getAll$().subscribe({
@@ -24,13 +25,18 @@ getAll$().subscribe({
 fromEvent<SubmitEvent>(form, 'submit')
 	.pipe(
 		tap(e => e.preventDefault()),
-		map(() => ({ title: titleInput.value.trim(), priority: Number(prioritySelect.value) })),
+		map(() => ({
+			title: titleInput.value.trim(),
+			priority: Number(prioritySelect.value),
+			dueDate: dueDateInput.value || null,
+		})),
 		filter(({ title }) => title.length > 0),
 		exhaustMap(body =>
 			create$(body).pipe(
 				tap(todo => dispatch({ type: 'CREATE_SUCCESS', todo })),
 				tap(() => {
 					titleInput.value = '';
+					dueDateInput.value = '';
 				}),
 				catchError(() => {
 					dispatch({ type: 'SET_ERROR', message: 'Failed to create todo.' });
