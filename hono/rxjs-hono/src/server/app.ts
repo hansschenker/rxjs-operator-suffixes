@@ -8,6 +8,12 @@ import {
 	CreateTodoSchema,
 	UpdateTodoSchema,
 } from '../entities/todos/schema';
+import {
+	products,
+	ProductSchema,
+	CreateProductSchema,
+	UpdateProductSchema,
+} from '../entities/products/schema';
 
 export function createApp(db: Db) {
 	const app = new OpenAPIHono({
@@ -22,6 +28,12 @@ export function createApp(db: Db) {
 		select: TodoSchema,
 		create: CreateTodoSchema,
 		update: UpdateTodoSchema,
+	}));
+
+	app.route('/products', createCrudRouter(db, products, {
+		select: ProductSchema,
+		create: CreateProductSchema,
+		update: UpdateProductSchema,
 	}));
 
 	app.doc('/openapi.json', {

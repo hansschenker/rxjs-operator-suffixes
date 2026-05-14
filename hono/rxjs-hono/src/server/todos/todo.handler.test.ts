@@ -1,11 +1,12 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import * as schema from '../../entities/todos/schema';
+import * as todosSchema    from '../../entities/todos/schema';
+import * as productsSchema from '../../entities/products/schema';
 import { createApp } from '../app';
 import type { z } from 'zod';
 
-type Todo = z.infer<typeof schema.TodoSchema>;
+type Todo = z.infer<typeof todosSchema.TodoSchema>;
 
 function createTestDb() {
 	const sqlite = new Database(':memory:');
@@ -17,9 +18,16 @@ function createTestDb() {
 			priority   INTEGER NOT NULL DEFAULT 2,
 			due_date   TEXT,
 			created_at TEXT NOT NULL
-		)
+		);
+		CREATE TABLE products (
+			id         TEXT PRIMARY KEY NOT NULL,
+			name       TEXT NOT NULL,
+			price      INTEGER NOT NULL DEFAULT 0,
+			in_stock   INTEGER NOT NULL DEFAULT 1,
+			created_at TEXT NOT NULL
+		);
 	`);
-	return drizzle(sqlite, { schema });
+	return drizzle(sqlite, { schema: { ...todosSchema, ...productsSchema } });
 }
 
 describe('GET /todos', () => {
