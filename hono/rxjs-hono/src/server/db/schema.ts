@@ -6,6 +6,7 @@ export const todos = sqliteTable('todos', {
 	title: text('title').notNull(),
 	completed: integer('completed', { mode: 'boolean' }).notNull().default(false),
 	priority: integer('priority').notNull().default(2),
+	dueDate: text('due_date'),
 	createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 

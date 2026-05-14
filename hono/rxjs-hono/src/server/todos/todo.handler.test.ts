@@ -14,6 +14,7 @@ function createTestDb() {
 			title TEXT NOT NULL,
 			completed INTEGER NOT NULL DEFAULT 0,
 			priority INTEGER NOT NULL DEFAULT 2,
+			due_date TEXT,
 			created_at TEXT NOT NULL
 		)
 	`);
