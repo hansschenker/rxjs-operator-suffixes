@@ -2,7 +2,8 @@ import { h } from './h';
 import { state$, dispatch } from './todo.state';
 import { getAll$, create$, update$, remove$ } from './todo.service';
 import { TodoItem } from './components/todo-item';
-import { catchError, EMPTY } from 'rxjs';
+import { catchError, EMPTY, fromEvent } from 'rxjs';
+import { exhaustMap, filter, map, tap } from 'rxjs/operators';
 
 const listEl = document.getElementById('todo-list')!;
 const errorEl = document.getElementById('error-msg')!;
@@ -16,20 +17,21 @@ getAll$().subscribe({
 });
 
 // Form submit: create a new todo
-form.addEventListener('submit', e => {
-	e.preventDefault();
-	const title = titleInput.value.trim();
-	if (!title) return;
-	create$({ title })
-		.pipe(catchError(() => {
-			dispatch({ type: 'SET_ERROR', message: 'Failed to create todo.' });
-			return EMPTY;
-		}))
-		.subscribe(todo => {
-			dispatch({ type: 'CREATE_SUCCESS', todo });
-			titleInput.value = '';
-		});
-});
+fromEvent<SubmitEvent>(form, 'submit').pipe(
+	tap(e => e.preventDefault()),
+	map(() => titleInput.value.trim()),
+	filter(title => title.length > 0),
+	exhaustMap(title =>
+		create$({ title }).pipe(
+			tap(todo => dispatch({ type: 'CREATE_SUCCESS', todo })),
+			tap(() => { titleInput.value = ''; }),
+			catchError(() => {
+				dispatch({ type: 'SET_ERROR', message: 'Failed to create todo.' });
+				return EMPTY;
+			})
+		)
+	),
+).subscribe();
 
 // Reactive render loop — re-renders the list on every state$ emission
 state$.subscribe(({ todos, error }) => {

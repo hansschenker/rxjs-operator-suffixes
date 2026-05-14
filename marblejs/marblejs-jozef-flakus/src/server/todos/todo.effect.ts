@@ -4,6 +4,7 @@ import { requestValidator$ } from '@marblejs/middleware-io';
 import type { Todo } from '../../shared/types';
 import { getTodos, setTodos } from './todo.store';
 import { CreateTodoCodec, UpdateTodoCodec } from './todo.validator';
+import type { CreateTodoInput, UpdateTodoInput } from './todo.validator';
 
 export const getAll$: HttpEffect = req$ =>
 	req$.pipe(
@@ -16,7 +17,7 @@ export const create$: HttpEffect = req$ =>
 		map(req => {
 			const todo: Todo = {
 				id: crypto.randomUUID(),
-				title: (req.body as { title: string }).title,
+				title: (req.body as CreateTodoInput).title,
 				completed: false,
 				createdAt: new Date().toISOString(),
 			};
@@ -30,8 +31,9 @@ export const update$: HttpEffect = req$ =>
 		requestValidator$({ body: UpdateTodoCodec }),
 		map(req => {
 			const id = (req.params as { id: string }).id;
+			const body = req.body as UpdateTodoInput;
 			const updated = getTodos().map(t =>
-				t.id === id ? { ...t, ...(req.body as object) } : t
+				t.id === id ? { ...t, ...body } : t
 			);
 			setTodos(updated);
 			return { body: updated.find(t => t.id === id) };
